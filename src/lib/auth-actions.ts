@@ -5,6 +5,11 @@ import { redirect } from "next/navigation";
 import { headers } from "next/headers";
 import { onboardingUseCases, type OnboardingUseCase } from "@/lib/onboarding";
 
+function getAppUrl(origin: string) {
+  const configured = process.env.APPRAISE_APP_URL || process.env.NEXT_PUBLIC_APP_URL;
+  return (configured || origin || "http://localhost:3000").replace(/\/$/, "");
+}
+
 export async function signInWithEmail(formData: FormData) {
   const supabase = await createClient();
   const redirectTo = (formData.get("redirectTo") as string) || "/dashboard";
@@ -27,6 +32,7 @@ export async function signUpWithEmail(formData: FormData) {
   const supabase = await createClient();
   const headersList = await headers();
   const origin = headersList.get("origin") ?? "";
+  const appUrl = getAppUrl(origin);
   const redirectTo = (formData.get("redirectTo") as string) || "/dashboard";
 
   const data = {
@@ -36,7 +42,7 @@ export async function signUpWithEmail(formData: FormData) {
       data: {
         full_name: formData.get("full_name") as string,
       },
-      emailRedirectTo: `${origin}/auth/callback?next=${encodeURIComponent(
+      emailRedirectTo: `${appUrl}/auth/callback?next=${encodeURIComponent(
         redirectTo.startsWith("/") ? redirectTo : "/dashboard"
       )}`,
     },
@@ -55,11 +61,12 @@ export async function signInWithOAuth(provider: "google" | "github", redirectTo:
   const supabase = await createClient();
   const headersList = await headers();
   const origin = headersList.get("origin") ?? "";
+  const appUrl = getAppUrl(origin);
 
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider,
     options: {
-      redirectTo: `${origin}/auth/callback?next=${encodeURIComponent(redirectTo)}`,
+      redirectTo: `${appUrl}/auth/callback?next=${encodeURIComponent(redirectTo)}`,
     },
   });
 
@@ -82,10 +89,11 @@ export async function resetPassword(formData: FormData) {
   const supabase = await createClient();
   const headersList = await headers();
   const origin = headersList.get("origin") ?? "";
+  const appUrl = getAppUrl(origin);
 
   const { error } = await supabase.auth.resetPasswordForEmail(
     formData.get("email") as string,
-    { redirectTo: `${origin}/auth/callback?next=/dashboard/settings` }
+    { redirectTo: `${appUrl}/auth/callback?next=/dashboard/settings` }
   );
 
   if (error) {
