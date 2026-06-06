@@ -22,6 +22,14 @@ interface Memory {
   relevanceScore: number;
 }
 
+interface PromptDebug {
+  provider: string;
+  model: string;
+  systemPrompt: string;
+  userPrompt: string;
+  hasContext: boolean;
+}
+
 interface CompareResult {
   withoutAppraise: {
     response: string;
@@ -54,6 +62,29 @@ interface CompareResult {
     workflow?: string;
     message: string;
     intent: string;
+  };
+  debug?: {
+    llmEnabled: boolean;
+    prompts?: {
+      withoutAppraise: PromptDebug;
+      withAppraise: PromptDebug;
+    };
+    contextSummary?: {
+      memories: number;
+      urgencySignals: string[];
+      suggestedActions: string[];
+      inferredGoals: string[];
+    };
+    requestPayload?: {
+      type: ChatbotType;
+      sessionId: string;
+      workflow?: string;
+      message: string;
+      intent: string;
+      metadata?: Record<string, unknown>;
+      maxMemories?: number;
+      maxEntities?: number;
+    };
   };
 }
 
@@ -130,7 +161,7 @@ export default function ChatbotsPage() {
   async function compareBots() {
     setLoading(true);
     setError("");
-    setStatus("Running stateless and Appraise-powered chatbots side by side...");
+    setStatus("Running the same chatbot request with and without Appraise context...");
 
     try {
       const response = await fetch("/api/appraise/v1/chatbots/compare", {
@@ -148,26 +179,32 @@ export default function ChatbotsPage() {
       });
       const body = await response.json();
       if (!response.ok) throw new Error(body.error?.message || "Unable to compare chatbot responses");
-      setResult(body);
+
+      const compareResult = body as CompareResult;
+      setResult(compareResult);
       setConversation((current) => [
         ...current,
         {
           id: `${Date.now()}_${current.length}`,
-          userMessage: body.request.message,
+          userMessage: compareResult.request.message,
           withoutAppraise: {
-            response: body.withoutAppraise.response,
-            provider: body.withoutAppraise.provider,
-            model: body.withoutAppraise.model,
+            response: compareResult.withoutAppraise.response,
+            provider: compareResult.withoutAppraise.provider,
+            model: compareResult.withoutAppraise.model,
           },
           withAppraise: {
-            response: body.withAppraise.response,
-            provider: body.withAppraise.provider,
-            model: body.withAppraise.model,
-            usedMemories: body.withAppraise.usedMemories,
+            response: compareResult.withAppraise.response,
+            provider: compareResult.withAppraise.provider,
+            model: compareResult.withAppraise.model,
+            usedMemories: compareResult.withAppraise.usedMemories,
           },
         },
       ]);
-      setStatus("Comparison ready.");
+      setStatus(
+        compareResult.debug?.llmEnabled
+          ? "Comparison ready. You are seeing the same model with two different prompt contexts."
+          : "Comparison ready. No live LLM key detected, so the template fallback is active."
+      );
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unable to compare chatbot responses");
       setResult(null);
@@ -194,6 +231,8 @@ export default function ChatbotsPage() {
   const urgencySignals = result?.context.urgencySignals ?? [];
   const suggestedActions = result?.context.suggestedActions ?? [];
   const inferredGoals = result?.context.inferredGoals ?? [];
+  const contextSummary = result?.debug?.contextSummary;
+  const prompts = result?.debug?.prompts;
 
   return (
     <div className="space-y-7 animate-fade-in">
@@ -205,10 +244,10 @@ export default function ChatbotsPage() {
               Chatbot lab
             </div>
             <h1 className="max-w-3xl text-4xl font-semibold tracking-tight text-slate-950">
-              Compare one chatbot without Appraise and one with Appraise.
+              Compare the same model with and without Appraise context.
             </h1>
             <p className="mt-4 max-w-2xl text-sm leading-7 text-slate-600">
-              This is a dedicated comparison workspace for a real chatbot flow. Both sides receive the same message. One replies statelessly, and the other retrieves Appraise context first.
+              This is the real developer loop. Send one message, inspect the retrieved memories, inspect both prompts, and see how the final answer changes when Appraise gets to shape the model input.
             </p>
           </div>
           <button
@@ -328,6 +367,13 @@ export default function ChatbotsPage() {
             </p>
           )}
 
+          <div className="grid gap-4 md:grid-cols-4">
+            <SummaryCard label="Live LLM" value={result?.debug?.llmEnabled ? "Enabled" : "Fallback"} tone={result?.debug?.llmEnabled ? "blue" : "slate"} />
+            <SummaryCard label="Memories" value={String(contextSummary?.memories ?? memories.length)} tone="blue" />
+            <SummaryCard label="Urgency signals" value={String(contextSummary?.urgencySignals.length ?? urgencySignals.length)} tone="slate" />
+            <SummaryCard label="Suggested actions" value={String(contextSummary?.suggestedActions.length ?? suggestedActions.length)} tone="slate" />
+          </div>
+
           <div className="grid gap-4 md:grid-cols-3">
             <ContextCard title="Urgency" icon={Zap} items={urgencySignals} />
             <ContextCard title="Actions" icon={Target} items={suggestedActions} />
@@ -431,6 +477,44 @@ export default function ChatbotsPage() {
           </pre>
         </div>
       </section>
+
+      <section className="grid gap-6 xl:grid-cols-2">
+        <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+          <div>
+            <h2 className="text-sm font-bold text-slate-950">LLM prompt debugger</h2>
+            <p className="mt-1 text-xs text-slate-600">
+              This is the exact reasoning surface developers care about: same model, different prompt context.
+            </p>
+          </div>
+          <div className="mt-5 grid gap-4 lg:grid-cols-2">
+            <PromptCard
+              title="Without Appraise"
+              prompt={prompts?.withoutAppraise}
+              empty="Run the comparison to inspect the stateless prompt."
+              tone="slate"
+            />
+            <PromptCard
+              title="With Appraise"
+              prompt={prompts?.withAppraise}
+              empty="Run the comparison to inspect the Appraise-powered prompt."
+              tone="blue"
+            />
+          </div>
+        </div>
+
+        <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+          <div>
+            <h2 className="text-sm font-bold text-slate-950">Request and context debugger</h2>
+            <p className="mt-1 text-xs text-slate-600">
+              Inspect the exact request payload sent to Appraise and the high-level context summary returned before prompting the model.
+            </p>
+          </div>
+          <div className="mt-5 grid gap-4 lg:grid-cols-2">
+            <JsonPanel title="Request payload" data={result?.debug?.requestPayload || { status: "Run the comparison to inspect the request." }} />
+            <JsonPanel title="Context summary" data={contextSummary || { status: "Run the comparison to inspect the context summary." }} />
+          </div>
+        </div>
+      </section>
     </div>
   );
 }
@@ -441,6 +525,16 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
       <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">{label}</span>
       {children}
     </label>
+  );
+}
+
+function SummaryCard({ label, value, tone }: { label: string; value: string; tone: "blue" | "slate" }) {
+  const isBlue = tone === "blue";
+  return (
+    <div className={`rounded-2xl border p-4 ${isBlue ? "border-blue-200 bg-blue-50" : "border-slate-200 bg-white"}`}>
+      <div className="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-500">{label}</div>
+      <div className={`mt-2 text-xl font-semibold ${isBlue ? "text-blue-700" : "text-slate-950"}`}>{value}</div>
+    </div>
   );
 }
 
@@ -522,18 +616,71 @@ function HistoryResponseCard({
   tone: "slate" | "blue";
   footer?: string;
 }) {
-  const isBlue = tone === "blue";
-
   return (
-    <div className={`rounded-2xl border p-4 ${isBlue ? "border-blue-200 bg-blue-50" : "border-slate-200 bg-white"}`}>
+    <div className={`rounded-2xl border p-4 ${tone === "blue" ? "border-blue-200 bg-blue-50" : "border-slate-200 bg-white"}`}>
       <div className="flex items-center justify-between gap-3">
         <div className="text-xs font-bold text-slate-950">{title}</div>
-        <div className="rounded-full border border-white/80 bg-white px-2 py-1 text-[10px] text-slate-500">
+        <div className="rounded-full border border-slate-200 bg-white px-3 py-1 text-[10px] text-slate-500">
           {provider} · {model}
         </div>
       </div>
-      <p className="mt-3 text-sm leading-7 text-slate-700">{response}</p>
+      <p className="mt-4 text-sm leading-7 text-slate-700">{response}</p>
       {footer && <p className="mt-3 text-[11px] font-semibold text-blue-700">{footer}</p>}
+    </div>
+  );
+}
+
+function PromptCard({
+  title,
+  prompt,
+  empty,
+  tone,
+}: {
+  title: string;
+  prompt?: PromptDebug;
+  empty: string;
+  tone: "slate" | "blue";
+}) {
+  return (
+    <div className={`rounded-2xl border p-4 ${tone === "blue" ? "border-blue-200 bg-blue-50" : "border-slate-200 bg-slate-50"}`}>
+      <div className="flex items-center justify-between gap-3">
+        <div className="text-xs font-bold text-slate-950">{title}</div>
+        {prompt && (
+          <div className="rounded-full border border-slate-200 bg-white px-3 py-1 text-[10px] text-slate-500">
+            {prompt.provider} · {prompt.model}
+          </div>
+        )}
+      </div>
+      {prompt ? (
+        <div className="mt-4 space-y-4">
+          <div>
+            <div className="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-500">System prompt</div>
+            <pre className="mt-2 overflow-auto whitespace-pre-wrap rounded-2xl border border-slate-200 bg-white p-4 font-mono text-xs leading-6 text-slate-700">
+              {prompt.systemPrompt}
+            </pre>
+          </div>
+          <div>
+            <div className="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-500">User prompt</div>
+            <pre className="mt-2 overflow-auto whitespace-pre-wrap rounded-2xl border border-slate-200 bg-white p-4 font-mono text-xs leading-6 text-slate-700">
+              {prompt.userPrompt}
+            </pre>
+          </div>
+          <p className="text-[11px] text-slate-500">Context injected: {prompt.hasContext ? "yes" : "no"}</p>
+        </div>
+      ) : (
+        <div className="mt-4 rounded-2xl border border-dashed border-slate-200 bg-white p-6 text-xs text-slate-500">{empty}</div>
+      )}
+    </div>
+  );
+}
+
+function JsonPanel({ title, data }: { title: string; data: unknown }) {
+  return (
+    <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+      <div className="text-xs font-bold text-slate-950">{title}</div>
+      <pre className="mt-3 max-h-[320px] overflow-auto whitespace-pre-wrap rounded-2xl border border-slate-200 bg-slate-950 p-4 font-mono text-xs leading-6 text-slate-200">
+        {JSON.stringify(data, null, 2)}
+      </pre>
     </div>
   );
 }
