@@ -158,7 +158,7 @@ async function bootstrapBackendProject(input: {
   defaultApiKeyName: string;
 }) {
   const apiUrl = (process.env.APPRAISE_API_URL || "http://localhost:3001").replace(/\/$/, "");
-  const apiKey = process.env.APPRAISE_API_KEY || "appraise_sk_demo_key_for_testing_only";
+  const apiKey = process.env.APPRAISE_CONSOLE_API_KEY || process.env.APPRAISE_API_KEY || "appraise_sk_demo_key_for_testing_only";
 
   try {
     await fetch(`${apiUrl}/v1/projects/bootstrap`, {

@@ -6,13 +6,13 @@ const developmentKey = "appraise_sk_demo_key_for_testing_only";
 
 async function proxy(request: NextRequest, context: { params: Promise<{ path: string[] }> }) {
   const { path } = await context.params;
-  const apiKey = process.env.APPRAISE_API_KEY || (process.env.NODE_ENV === "development" ? developmentKey : "");
+  const apiKey = process.env.APPRAISE_CONSOLE_API_KEY || process.env.APPRAISE_API_KEY || (process.env.NODE_ENV === "development" ? developmentKey : "");
   const shouldBypassConsoleAuth =
     process.env.NODE_ENV === "development" &&
     process.env.APPRAISE_CONSOLE_REQUIRE_AUTH !== "true";
 
   if (!apiKey) {
-    return NextResponse.json({ error: { message: "APPRAISE_API_KEY is not configured" } }, { status: 500 });
+    return NextResponse.json({ error: { message: "APPRAISE_CONSOLE_API_KEY or APPRAISE_API_KEY is not configured" } }, { status: 500 });
   }
 
   let appraiseUserId = "demo-user";
