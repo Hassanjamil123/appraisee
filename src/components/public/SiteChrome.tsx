@@ -7,6 +7,7 @@ const navLinks = [
   { href: "/#platform", label: "Product" },
   { href: "/llms", label: "LLMs" },
   { href: "/integrations", label: "Integrations" },
+  { href: "/memory", label: "Memory" },
   { href: "/docs", label: "Docs" },
   { href: "/pricing", label: "Pricing" },
 ];
@@ -18,6 +19,7 @@ const footerGroups = [
       { href: "/#how-it-works", label: "How it works" },
       { href: "/llms", label: "LLM integrations" },
       { href: "/integrations", label: "Integrations" },
+      { href: "/memory", label: "Memory" },
       { href: "/login?redirectTo=/dashboard", label: "Console" },
     ],
   },
@@ -26,8 +28,8 @@ const footerGroups = [
     links: [
       { href: "/docs", label: "Documentation" },
       { href: "/llms", label: "LLM guide" },
-      { href: "/docs#track-api", label: "Track API" },
-      { href: "/docs#context-api", label: "Context API" },
+      { href: "/workflows", label: "Workflows" },
+      { href: "/retrieval", label: "Retrieval" },
     ],
   },
   {
@@ -150,6 +152,9 @@ export function PublicFooter() {
             </Link>
             <Link href="/integrations" className="hover:text-slate-950">
               Integrations
+            </Link>
+            <Link href="/memory" className="hover:text-slate-950">
+              Memory
             </Link>
           </div>
         </div>
