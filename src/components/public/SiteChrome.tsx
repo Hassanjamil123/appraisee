@@ -28,6 +28,7 @@ const navGroups = [
     items: [
       { href: "/demo", label: "Demo", copy: "See how Appraise behaves across real use cases." },
       { href: "/pricing", label: "Pricing", copy: "Understand plans, limits, and upgrade paths." },
+      { href: "/why-appraise", label: "Why Appraise", copy: "See how Appraise compares with transcript stuffing, vector DBs, and RAG-only setups." },
       { href: "/login?redirectTo=/dashboard", label: "Console", copy: "Open the dashboard, workspaces, API keys, and team settings." },
     ],
   },
@@ -59,8 +60,8 @@ const footerGroups = [
     links: [
       { href: "/demo", label: "Use cases" },
       { href: "/pricing", label: "Pricing" },
+      { href: "/why-appraise", label: "Why Appraise" },
       { href: "/login?redirectTo=/dashboard/chatbots", label: "Chatbot lab" },
-      { href: "/login?redirectTo=/dashboard", label: "Console" },
     ],
   },
   {
@@ -105,6 +106,9 @@ export function PublicHeader() {
               </div>
             </div>
           ))}
+          <Link href="/why-appraise" className="rounded-full px-4 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-100 hover:text-slate-950">
+            Why Appraise
+          </Link>
           <Link href="/pricing" className="rounded-full px-4 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-100 hover:text-slate-950">
             Pricing
           </Link>
