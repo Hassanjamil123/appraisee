@@ -12,6 +12,7 @@ import {
   Layers3,
   LockKeyhole,
   MessageSquareText,
+  Search,
   Shield,
   Sparkles,
   Workflow,
@@ -69,6 +70,37 @@ const platformCards = [
     icon: Brain,
     title: "Decision-ready context",
     copy: "Retrieve the right memory, linked entities, urgency, and next action before your model replies.",
+  },
+];
+
+const platformMap = [
+  { href: "/memory", icon: Database, title: "Memory", copy: "Structured memory for facts, entities, decisions, and operational history." },
+  { href: "/workflows", icon: Workflow, title: "Workflows", copy: "Stage-aware context for support, sales, recruiting, healthcare, and internal agents." },
+  { href: "/retrieval", icon: Search, title: "Retrieval", copy: "Return the smallest useful context window instead of dumping transcripts into prompts." },
+  { href: "/llms", icon: Sparkles, title: "LLMs", copy: "Use Appraise with OpenAI, Anthropic, OpenRouter, or your own model stack." },
+  { href: "/integrations", icon: CloudLightning, title: "Integrations", copy: "Bring Appraise closer to the systems where customer and workflow context already lives." },
+];
+
+const whyRows = [
+  {
+    label: "Transcript stuffing",
+    without: "The whole chat history gets shoved into the prompt whether it matters or not.",
+    with: "Appraise retrieves only the memory that matters for the current decision.",
+  },
+  {
+    label: "Vector DB only",
+    without: "Similarity search finds related text, but it does not understand workflow stage or decision pressure.",
+    with: "Appraise uses project memory plus workflow context, urgency, and entity relationships.",
+  },
+  {
+    label: "RAG-only memory",
+    without: "Good for documents, weak for live operational state across customers and workflows.",
+    with: "Appraise is built for ongoing product memory, not just document retrieval.",
+  },
+  {
+    label: "Developer path",
+    without: "Teams rebuild context pipelines, prompt stuffing logic, and comparison flows themselves.",
+    with: "Appraise gives one API, one console, and one context layer in front of the model.",
   },
 ];
 
@@ -355,6 +387,32 @@ export default function Home() {
               </article>
             ))}
           </div>
+
+          <div className="mt-12">
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <p className="text-sm font-semibold uppercase tracking-[0.22em] text-blue-600">Explore the platform</p>
+                <h3 className="mt-3 text-3xl font-semibold tracking-tight">Follow the product map.</h3>
+              </div>
+              <Link href="/docs" className="hidden items-center gap-2 rounded-full border border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-800 lg:inline-flex">
+                Open docs
+                <ArrowRight className="h-4 w-4" />
+              </Link>
+            </div>
+            <div className="mt-8 grid gap-5 md:grid-cols-2 xl:grid-cols-5">
+              {platformMap.map((item) => (
+                <Link key={item.href} href={item.href} className="group rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-1 hover:border-slate-300 hover:shadow-md">
+                  <item.icon className="h-5 w-5 text-blue-600" />
+                  <h3 className="mt-5 text-xl font-semibold tracking-tight text-slate-950">{item.title}</h3>
+                  <p className="mt-3 text-sm leading-7 text-slate-600">{item.copy}</p>
+                  <div className="mt-5 inline-flex items-center gap-2 text-sm font-semibold text-blue-700">
+                    Learn more
+                    <ArrowRight className="h-4 w-4 transition group-hover:translate-x-0.5" />
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
         </div>
       </section>
 
@@ -472,15 +530,18 @@ export default function Home() {
                 Most memory systems stop at similarity. Appraise pushes toward operational context: what happened, who is involved,
                 what stage the workflow is in, and what decision pressure exists now.
               </p>
+              <div className="mt-6 rounded-[2rem] border border-slate-200 bg-slate-50 p-5 text-sm leading-7 text-slate-600">
+                Developers are not just buying storage. They are buying better model inputs, cleaner context retrieval, and a more reliable reasoning loop in front of the LLM.
+              </div>
             </div>
 
             <div className="overflow-hidden rounded-[2rem] border border-slate-200 bg-[#f7f8fb] shadow-sm">
               <div className="grid grid-cols-[0.8fr_1fr_1fr] border-b border-slate-200 bg-white px-5 py-4 text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
-                <div>Layer</div>
-                <div>Typical memory setup</div>
+                <div>Approach</div>
+                <div>Typical setup</div>
                 <div>Appraise</div>
               </div>
-              {comparisonRows.map((row) => (
+              {whyRows.map((row) => (
                 <div key={row.label} className="grid grid-cols-[0.8fr_1fr_1fr] border-b border-slate-200 last:border-b-0">
                   <div className="px-5 py-5 text-sm font-semibold text-slate-950">{row.label}</div>
                   <div className="px-5 py-5 text-sm leading-7 text-slate-600">{row.without}</div>
