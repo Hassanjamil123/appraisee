@@ -26,6 +26,7 @@ const sections = [
   { id: "auth", label: "Authentication" },
   { id: "track-api", label: "Track API" },
   { id: "context-api", label: "Context API" },
+  { id: "llm-reasoning", label: "Using with LLMs" },
   { id: "compare", label: "Chatbot compare" },
   { id: "plans", label: "Plans and limits" },
 ];
@@ -110,6 +111,112 @@ const compareSnippet = `POST /v1/chatbots/compare
   "workflow": "customer_support",
   "message": "Where is my order? I already asked yesterday."
 }`;
+
+const withoutAppraiseSnippet = `const response = await openai.responses.create({
+  model: "your-openai-model",
+  input: [
+    {
+      role: "system",
+      content: "You are a helpful customer support assistant."
+    },
+    {
+      role: "user",
+      content: "Where is my order? I already asked yesterday."
+    }
+  ]
+});`;
+
+const withAppraiseSnippet = `const context = await appraise.context.get({
+  sessionId: "support_cust_8842",
+  workflow: "customer_support",
+  intent: "resolve_customer_issue",
+  query: "Where is my order? I already asked yesterday."
+});
+
+const response = await openai.responses.create({
+  model: "your-openai-model",
+  input: [
+    {
+      role: "system",
+      content: "You are a helpful customer support assistant.
+
+Use this Appraise context when answering:
+" + JSON.stringify(context, null, 2)
+    },
+    {
+      role: "user",
+      content: "Where is my order? I already asked yesterday."
+    }
+  ]
+});`;
+
+const openaiSnippet = `import OpenAI from "openai";
+
+const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+
+const context = await appraise.context.get({
+  sessionId,
+  workflow,
+  intent: "resolve_customer_issue",
+  query: userMessage
+});
+
+const response = await openai.responses.create({
+  model: "your-openai-model",
+  input: [
+    {
+      role: "system",
+      content: "Use this Appraise context:
+" + JSON.stringify(context, null, 2)
+    },
+    { role: "user", content: userMessage }
+  ]
+});`;
+
+const anthropicSnippet = `import Anthropic from "@anthropic-ai/sdk";
+
+const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+
+const context = await appraise.context.get({
+  sessionId,
+  workflow,
+  intent: "resolve_customer_issue",
+  query: userMessage
+});
+
+const response = await anthropic.messages.create({
+  model: "your-anthropic-model",
+  max_tokens: 800,
+  system: "Use this Appraise context:
+" + JSON.stringify(context, null, 2),
+  messages: [{ role: "user", content: userMessage }]
+});`;
+
+const openRouterSnippet = `const context = await appraise.context.get({
+  sessionId,
+  workflow,
+  intent: "resolve_customer_issue",
+  query: userMessage
+});
+
+const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+  method: "POST",
+  headers: {
+    Authorization: "Bearer " + process.env.OPENROUTER_API_KEY,
+    "Content-Type": "application/json"
+  },
+  body: JSON.stringify({
+    model: "your-openrouter-model",
+    messages: [
+      {
+        role: "system",
+        content: "Use this Appraise context:
+" + JSON.stringify(context, null, 2)
+      },
+      { role: "user", content: userMessage }
+    ]
+  })
+});`;
 
 export default function DocsPage() {
   const [activeTab, setActiveTab] = useState<"ts" | "py">("ts");
@@ -285,6 +392,76 @@ export default function DocsPage() {
               onCopy={() => copyToClipboard(curlContext, "context")}
               copied={copied === "context"}
             />
+          </DocSection>
+
+          <DocSection id="llm-reasoning" icon={<Sparkles className="h-5 w-5 text-blue-600" />} title="Using Appraise with LLMs">
+            <p className="text-slate-600">
+              Appraise is the context layer before the model, not the model itself. Your application retrieves Appraise context first, then injects it into the prompt you send to OpenAI, Anthropic, OpenRouter, or any other provider.
+            </p>
+            <div className="mt-5 grid gap-6 xl:grid-cols-2">
+              <div>
+                <div className="text-sm font-semibold text-slate-950">Without Appraise</div>
+                <p className="mt-2 text-sm leading-7 text-slate-600">
+                  The model only sees the latest user message, so it tends to ask for information your product already knows.
+                </p>
+                <CodeBlock
+                  label="baseline.ts"
+                  text={withoutAppraiseSnippet}
+                  onCopy={() => copyToClipboard(withoutAppraiseSnippet, "without-appraise")}
+                  copied={copied === "without-appraise"}
+                />
+              </div>
+              <div>
+                <div className="text-sm font-semibold text-slate-950">With Appraise</div>
+                <p className="mt-2 text-sm leading-7 text-slate-600">
+                  Retrieve workflow-aware context first, then give the model the right memory, urgency, and suggested actions before it reasons.
+                </p>
+                <CodeBlock
+                  label="with-appraise.ts"
+                  text={withAppraiseSnippet}
+                  onCopy={() => copyToClipboard(withAppraiseSnippet, "with-appraise")}
+                  copied={copied === "with-appraise"}
+                />
+              </div>
+            </div>
+            <div className="mt-6 overflow-hidden rounded-2xl border border-slate-200 text-sm">
+              <div className="grid grid-cols-3 bg-slate-50 p-3 font-semibold text-slate-700">
+                <span>Provider</span>
+                <span>What Appraise provides</span>
+                <span>What your model still does</span>
+              </div>
+              {[
+                ["OpenAI", "Context payload, memories, urgency, workflow state", "Reasoning, response generation, tool orchestration"],
+                ["Anthropic", "Same Appraise retrieval layer", "Long-form reasoning and response generation"],
+                ["OpenRouter", "Same Appraise retrieval layer", "Provider choice and model execution"],
+              ].map(([provider, appraiseRole, modelRole]) => (
+                <div key={provider} className="grid grid-cols-3 border-t border-slate-200 p-3">
+                  <span className="font-mono text-blue-700">{provider}</span>
+                  <span className="text-slate-600">{appraiseRole}</span>
+                  <span className="text-slate-600">{modelRole}</span>
+                </div>
+              ))}
+            </div>
+            <div className="mt-6 space-y-6">
+              <CodeBlock
+                label="OpenAI"
+                text={openaiSnippet}
+                onCopy={() => copyToClipboard(openaiSnippet, "openai")}
+                copied={copied === "openai"}
+              />
+              <CodeBlock
+                label="Anthropic"
+                text={anthropicSnippet}
+                onCopy={() => copyToClipboard(anthropicSnippet, "anthropic")}
+                copied={copied === "anthropic"}
+              />
+              <CodeBlock
+                label="OpenRouter"
+                text={openRouterSnippet}
+                onCopy={() => copyToClipboard(openRouterSnippet, "openrouter")}
+                copied={copied === "openrouter"}
+              />
+            </div>
           </DocSection>
 
           <DocSection id="compare" icon={<Bot className="h-5 w-5 text-blue-600" />} title="Chatbot compare">

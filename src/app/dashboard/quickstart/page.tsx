@@ -13,6 +13,7 @@ import {
   Play,
   Rocket,
   Server,
+  Sparkles,
   Terminal,
 } from "lucide-react";
 
@@ -80,6 +81,32 @@ const curlSnippet = `curl -X POST http://localhost:3001/v1/context \\
     "workflow": "customer_support",
     "intent": "resolve_customer_issue"
   }'`;
+
+const withoutAppraiseSnippet = `const response = await llm.chat(` + "`" + `
+You are a helpful ecommerce support chatbot.
+
+Customer message:
+\${message}
+` + "`" + `);`;
+
+const withAppraiseReasoningSnippet = `const context = await appraise.context.get({
+  sessionId: "customer_alex_001",
+  workflow: "customer_support",
+  intent: "resolve_customer_issue",
+  query: message
+});
+
+const response = await llm.chat(` + "`" + `
+You are a helpful ecommerce support chatbot.
+
+Customer message:
+\${message}
+
+Appraise context:
+\${JSON.stringify(context, null, 2)}
+
+Use the context to decide the next best support action.
+` + "`" + `);`;
 
 const steps = [
   {
@@ -221,7 +248,36 @@ export default function QuickstartPage() {
         <CodeCard title="4. Retrieve context" subtitle="Ask Appraise what matters now." label="context.ts" text={contextSnippet} copied={copied === "context"} onCopy={() => copy(contextSnippet, "context")} />
       </section>
 
-      <section className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
+      <section className="space-y-6">
+        <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+          <div className="flex items-center gap-2">
+            <Sparkles className="h-5 w-5 text-blue-600" />
+            <h2 className="text-sm font-bold text-slate-950">Where the reasoning happens</h2>
+          </div>
+          <p className="mt-3 max-w-3xl text-sm leading-7 text-slate-600">
+            Appraise does not replace your LLM. It improves the model input. Your backend retrieves Appraise context first, then injects that context into the prompt you send to OpenAI, Anthropic, OpenRouter, or your own model stack.
+          </p>
+          <div className="mt-6 grid gap-6 xl:grid-cols-2">
+            <CodeCard
+              title="Without Appraise"
+              subtitle="Only the latest user message reaches the model."
+              label="baseline-llm.ts"
+              text={withoutAppraiseSnippet}
+              copied={copied === "without-appraise"}
+              onCopy={() => copy(withoutAppraiseSnippet, "without-appraise")}
+            />
+            <CodeCard
+              title="With Appraise"
+              subtitle="Retrieve context first, then let the model reason with it."
+              label="appraise-llm.ts"
+              text={withAppraiseReasoningSnippet}
+              copied={copied === "with-appraise"}
+              onCopy={() => copy(withAppraiseReasoningSnippet, "with-appraise")}
+            />
+          </div>
+        </div>
+
+        <div className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
         <CodeCard
           title="Chatbot integration"
           subtitle="Inject Appraise context into your LLM prompt before responding."
@@ -251,6 +307,7 @@ export default function QuickstartPage() {
               <li>Suggested actions include refund, credit, SMS update, or escalation.</li>
             </ul>
           </div>
+        </div>
         </div>
       </section>
     </div>
