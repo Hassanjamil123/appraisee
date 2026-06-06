@@ -5,7 +5,8 @@ import { ArrowUpRight, Brain } from "lucide-react";
 
 const navLinks = [
   { href: "/#platform", label: "Product" },
-  { href: "/demo", label: "Demo" },
+  { href: "/llms", label: "LLMs" },
+  { href: "/integrations", label: "Integrations" },
   { href: "/docs", label: "Docs" },
   { href: "/pricing", label: "Pricing" },
 ];
@@ -15,8 +16,8 @@ const footerGroups = [
     title: "Product",
     links: [
       { href: "/#how-it-works", label: "How it works" },
-      { href: "/demo", label: "Live demo" },
-      { href: "/pricing", label: "Pricing" },
+      { href: "/llms", label: "LLM integrations" },
+      { href: "/integrations", label: "Integrations" },
       { href: "/login?redirectTo=/dashboard", label: "Console" },
     ],
   },
@@ -24,7 +25,7 @@ const footerGroups = [
     title: "Developers",
     links: [
       { href: "/docs", label: "Documentation" },
-      { href: "/docs#install", label: "SDK install" },
+      { href: "/llms", label: "LLM guide" },
       { href: "/docs#track-api", label: "Track API" },
       { href: "/docs#context-api", label: "Context API" },
     ],
@@ -33,7 +34,7 @@ const footerGroups = [
     title: "Company",
     links: [
       { href: "/#platform", label: "Product" },
-      { href: "/#demo", label: "Use cases" },
+      { href: "/demo", label: "Use cases" },
       { href: "/login?redirectTo=/dashboard/chatbots", label: "Chatbot lab" },
       { href: "/signup", label: "Start free" },
     ],
@@ -144,8 +145,11 @@ export function PublicFooter() {
             <Link href="/pricing" className="hover:text-slate-950">
               Pricing
             </Link>
-            <Link href="/demo" className="hover:text-slate-950">
-              Demo
+            <Link href="/llms" className="hover:text-slate-950">
+              LLMs
+            </Link>
+            <Link href="/integrations" className="hover:text-slate-950">
+              Integrations
             </Link>
           </div>
         </div>
