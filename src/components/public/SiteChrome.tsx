@@ -1,62 +1,75 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowUpRight, Brain } from "lucide-react";
+import { ArrowUpRight, Brain, ChevronDown } from "lucide-react";
 
-const navLinks = [
-  { href: "/#platform", label: "Product" },
-  { href: "/llms", label: "LLMs" },
-  { href: "/integrations", label: "Integrations" },
-  { href: "/memory", label: "Memory" },
-  { href: "/docs", label: "Docs" },
-  { href: "/pricing", label: "Pricing" },
+const navGroups = [
+  {
+    label: "Product",
+    items: [
+      { href: "/memory", label: "Memory", copy: "Structured memory for facts, entities, and decisions." },
+      { href: "/workflows", label: "Workflows", copy: "Stage-aware context for agents that do real work." },
+      { href: "/retrieval", label: "Retrieval", copy: "Return the smallest useful context window." },
+      { href: "/integrations", label: "Integrations", copy: "Connect Appraise to the rest of your stack." },
+      { href: "/llms", label: "LLMs", copy: "Inject Appraise context before model reasoning." },
+    ],
+  },
+  {
+    label: "Developers",
+    items: [
+      { href: "/docs", label: "Documentation", copy: "Install, authenticate, track events, and retrieve context." },
+      { href: "/docs#llm-reasoning", label: "LLM guide", copy: "See how Appraise fits into OpenAI, Anthropic, and OpenRouter flows." },
+      { href: "/login?redirectTo=/dashboard/quickstart", label: "Quickstart", copy: "Walk through the first working Appraise integration." },
+      { href: "/login?redirectTo=/dashboard/chatbots", label: "Chatbot lab", copy: "Compare stateless bots against Appraise-powered ones." },
+    ],
+  },
+  {
+    label: "Resources",
+    items: [
+      { href: "/demo", label: "Demo", copy: "See how Appraise behaves across real use cases." },
+      { href: "/pricing", label: "Pricing", copy: "Understand plans, limits, and upgrade paths." },
+      { href: "/login?redirectTo=/dashboard", label: "Console", copy: "Open the dashboard, workspaces, API keys, and team settings." },
+    ],
+  },
 ];
 
 const footerGroups = [
   {
     title: "Product",
     links: [
-      { href: "/#how-it-works", label: "How it works" },
+      { href: "/memory", label: "Memory" },
+      { href: "/workflows", label: "Workflows" },
+      { href: "/retrieval", label: "Retrieval" },
       { href: "/llms", label: "LLM integrations" },
       { href: "/integrations", label: "Integrations" },
-      { href: "/memory", label: "Memory" },
-      { href: "/login?redirectTo=/dashboard", label: "Console" },
     ],
   },
   {
     title: "Developers",
     links: [
       { href: "/docs", label: "Documentation" },
-      { href: "/llms", label: "LLM guide" },
-      { href: "/workflows", label: "Workflows" },
-      { href: "/retrieval", label: "Retrieval" },
+      { href: "/docs#track-api", label: "Track API" },
+      { href: "/docs#context-api", label: "Context API" },
+      { href: "/docs#llm-reasoning", label: "LLM guide" },
+      { href: "/login?redirectTo=/dashboard/quickstart", label: "Quickstart" },
+    ],
+  },
+  {
+    title: "Resources",
+    links: [
+      { href: "/demo", label: "Use cases" },
+      { href: "/pricing", label: "Pricing" },
+      { href: "/login?redirectTo=/dashboard/chatbots", label: "Chatbot lab" },
+      { href: "/login?redirectTo=/dashboard", label: "Console" },
     ],
   },
   {
     title: "Company",
     links: [
-      { href: "/#platform", label: "Product" },
-      { href: "/demo", label: "Use cases" },
-      { href: "/login?redirectTo=/dashboard/chatbots", label: "Chatbot lab" },
       { href: "/signup", label: "Start free" },
-    ],
-  },
-  {
-    title: "Legal",
-    links: [
-      { href: "/pricing", label: "Plans" },
-      { href: "/docs", label: "Developer terms" },
+      { href: "/login", label: "Sign in" },
       { href: "/login?redirectTo=/dashboard/billing", label: "Billing" },
-      { href: "/login", label: "Account access" },
-    ],
-  },
-  {
-    title: "Get started",
-    links: [
-      { href: "/signup", label: "Start free" },
-      { href: "/login?redirectTo=/dashboard", label: "Sign in" },
-      { href: "/login?redirectTo=/dashboard/quickstart", label: "Quickstart" },
-      { href: "/login?redirectTo=/dashboard/chatbots", label: "Chatbots" },
+      { href: "/docs", label: "Developer terms" },
     ],
   },
 ];
@@ -71,13 +84,31 @@ export function PublicHeader() {
           </span>
           <span className="text-lg font-semibold tracking-tight">Appraise</span>
         </Link>
-        <div className="hidden items-center gap-8 text-sm font-medium text-slate-600 md:flex">
-          {navLinks.map((link) => (
-            <Link key={link.href} href={link.href} className="hover:text-slate-950">
-              {link.label}
-            </Link>
+
+        <div className="hidden items-center gap-3 md:flex">
+          {navGroups.map((group) => (
+            <div key={group.label} className="group relative">
+              <button className="inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-100 hover:text-slate-950">
+                {group.label}
+                <ChevronDown className="h-4 w-4" />
+              </button>
+              <div className="invisible absolute left-0 top-full z-40 mt-3 w-[22rem] translate-y-2 opacity-0 transition duration-150 group-hover:visible group-hover:translate-y-0 group-hover:opacity-100 group-focus-within:visible group-focus-within:translate-y-0 group-focus-within:opacity-100">
+                <div className="rounded-[1.5rem] border border-slate-200 bg-white p-3 shadow-[0_20px_60px_rgba(15,23,42,0.12)]">
+                  {group.items.map((item) => (
+                    <Link key={item.href} href={item.href} className="block rounded-2xl px-4 py-3 transition hover:bg-slate-50">
+                      <div className="text-sm font-semibold text-slate-950">{item.label}</div>
+                      <div className="mt-1 text-sm leading-6 text-slate-600">{item.copy}</div>
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            </div>
           ))}
+          <Link href="/pricing" className="rounded-full px-4 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-100 hover:text-slate-950">
+            Pricing
+          </Link>
         </div>
+
         <div className="flex items-center gap-3">
           <Link
             href="/login?redirectTo=/dashboard"
@@ -122,7 +153,7 @@ export function PublicFooter() {
             </div>
           </div>
 
-          <div className="grid gap-8 sm:grid-cols-2 xl:grid-cols-5">
+          <div className="grid gap-8 sm:grid-cols-2 xl:grid-cols-4">
             {footerGroups.map((group) => (
               <div key={group.title}>
                 <h3 className="text-sm font-semibold text-slate-950">{group.title}</h3>
