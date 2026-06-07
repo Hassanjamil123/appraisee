@@ -95,6 +95,23 @@ function unique(values: string[]) {
   return [...new Set(values.filter(Boolean))];
 }
 
+function matchesHelpIntent(message: string) {
+  return /how\s+(could|can|will)\s+appraise\s+help/i.test(message)
+    || /how\s+would\s+appraise\s+help/i.test(message)
+    || /what\s+would\s+appraise\s+do/i.test(message);
+}
+
+function matchesIntegrationIntent(message: string) {
+  return /integrate\s+first/i.test(message)
+    || /what\s+should\s+we\s+integrate\s+first/i.test(message)
+    || /where\s+should\s+we\s+start/i.test(message)
+    || /what\s+should\s+we\s+build\s+first/i.test(message);
+}
+
+function getOperationalMemory(memories: string[]) {
+  return memories.find((memory) => /manual|manually|repeat conversations|look through conversations|conversation history|support inbox/i.test(memory)) || null;
+}
+
 function getUserMemories(response: AppraiseChatResponse, currentMessage: string) {
   const lowerCurrent = currentMessage.trim().toLowerCase();
   return unique(
@@ -122,7 +139,15 @@ function buildPublicAssistantReply(message: string, response: AppraiseChatRespon
   const userMemories = getUserMemories(response, message);
   const useCase = inferUseCase(userMemories);
   const firstMemory = userMemories[0];
+  const operationalMemory = getOperationalMemory(userMemories);
   const productName = useCase.productName || "your assistant";
+
+  if (/manual|manually|repeat conversations|look through conversations|conversation history/i.test(message)) {
+    if (useCase.isSupport) {
+      return `That is exactly the kind of pain Appraise helps with. If ${productName} currently relies on manually reading old WhatsApp threads, Appraise can track the important events from those conversations and retrieve the right customer context before each reply, so the agent does not need to reconstruct history by hand.`;
+    }
+    return "That manual review step is a strong sign you need a memory layer. Appraise can track the important events from prior conversations and retrieve the right context before each reply so your team is not rebuilding history by hand.";
+  }
 
   if (lowerMessage.includes("remember")) {
     if (firstMemory) {
@@ -131,16 +156,22 @@ function buildPublicAssistantReply(message: string, response: AppraiseChatRespon
     return "I do not have a clear user-specific memory yet beyond this thread starting point. Tell me a bit more about your product and I’ll hold onto it across turns.";
   }
 
-  if (lowerMessage.includes("how could appraise help") || lowerMessage.includes("how can appraise help")) {
+  if (matchesHelpIntent(message)) {
     if (useCase.isSupport) {
-      return `For ${productName}, Appraise could remember repeat-customer context across WhatsApp conversations: order issues, refund history, escalation state, customer tone, and channel preferences. The key win is that before your agent replies, it can retrieve the right context for that customer instead of treating every message like a fresh thread.`;
+      const operationsLine = operationalMemory
+        ? ` Right now you mentioned ${operationalMemory.toLowerCase()}, and Appraise would replace that manual lookup with retrieved customer context before each reply.`
+        : "";
+      return `For ${productName}, Appraise could remember repeat-customer context across WhatsApp conversations: order issues, refund history, escalation state, customer tone, and channel preferences. The key win is that before your agent replies, it can retrieve the right context for that customer instead of treating every message like a fresh thread.${operationsLine}`;
     }
     return `Appraise would help by tracking what happened in your product, retrieving the most relevant context before each reply, and then giving the model a much better memory surface than raw transcript stuffing.`;
   }
 
-  if (lowerMessage.includes("integrate first") || lowerMessage.includes("what should we integrate first")) {
+  if (matchesIntegrationIntent(message)) {
     if (useCase.isSupport) {
-      return `I would start with the customer-support loop for ${productName}: first track events like order delayed, refund offered, escalation requested, and preferred contact channel. Then before each WhatsApp reply, call Appraise context retrieval with the customer session so the agent sees the right memories and next actions.`;
+      const operationsLine = operationalMemory
+        ? ` Since ${productName} currently depends on manual conversation review, the first win is to track those support events automatically and retrieve them before each WhatsApp reply.`
+        : "";
+      return `I would start with the customer-support loop for ${productName}: first track events like order delayed, refund offered, escalation requested, and preferred contact channel. Then before each WhatsApp reply, call Appraise context retrieval with the customer session so the agent sees the right memories and next actions.${operationsLine}`;
     }
     return "I would start by tracking the highest-signal product events first, then retrieve Appraise context right before your assistant replies. That gives you the shortest path to a real memory win.";
   }
