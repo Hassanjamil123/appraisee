@@ -105,6 +105,7 @@ export function PublicChatWidget() {
 
   const canSend = useMemo(() => input.trim().length > 0 && !loading && sessionId, [input, loading, sessionId]);
   const rememberedTags = useMemo(() => inferRememberedTags(messages), [messages]);
+  const hasStartedConversation = useMemo(() => messages.some((message) => message.role === "user"), [messages]);
 
   async function sendMessage(prefilled?: string) {
     const trimmed = (prefilled ?? input).trim();
@@ -220,30 +221,14 @@ export function PublicChatWidget() {
               </button>
             </div>
 
-            <div className="border-b border-slate-200 bg-white px-4 py-3">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">Starter prompts</p>
-              <div className="mt-3 flex flex-wrap gap-2">
-                {starterPrompts.map((prompt) => (
-                  <button
-                    key={prompt}
-                    type="button"
-                    onClick={() => void sendMessage(prompt)}
-                    disabled={loading || !sessionId}
-                    className="rounded-full border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-medium text-slate-600 hover:border-slate-300 hover:text-slate-900 disabled:opacity-40"
-                  >
-                    {prompt}
-                  </button>
-                ))}
+            <div className="flex items-center justify-between gap-3 border-b border-slate-200 bg-white px-4 py-3 text-xs text-slate-500">
+              <div className="flex flex-wrap gap-2">
+                {rememberedTags.length > 0 ? rememberedTags.map((tag) => (
+                  <span key={tag} className="rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-[11px] font-medium text-blue-700">
+                    {tag}
+                  </span>
+                )) : <span>Tell the assistant about your product and it will remember the details.</span>}
               </div>
-              {rememberedTags.length > 0 ? (
-                <div className="mt-3 flex flex-wrap gap-2">
-                  {rememberedTags.map((tag) => (
-                    <span key={tag} className="rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-[11px] font-medium text-blue-700">
-                      {tag}
-                    </span>
-                  ))}
-                </div>
-              ) : null}
             </div>
 
             <div className="flex-1 space-y-3 overflow-y-auto bg-slate-50 px-4 py-4">
@@ -255,6 +240,24 @@ export function PublicChatWidget() {
                   </div>
                 </div>
               ))}
+              {!hasStartedConversation ? (
+                <div className="rounded-3xl border border-dashed border-slate-200 bg-white p-4 shadow-sm">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">Try one of these</p>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {starterPrompts.map((prompt) => (
+                      <button
+                        key={prompt}
+                        type="button"
+                        onClick={() => void sendMessage(prompt)}
+                        disabled={loading || !sessionId}
+                        className="rounded-full border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-medium text-slate-600 hover:border-slate-300 hover:text-slate-900 disabled:opacity-40"
+                      >
+                        {prompt}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
               {loading ? (
                 <div className="flex justify-start">
                   <div className="inline-flex items-center gap-2 rounded-3xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-600 shadow-sm">
