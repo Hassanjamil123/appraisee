@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 const apiUrl = (process.env.APPRAISE_API_URL || "http://localhost:3001").replace(/\/$/, "");
 const apiKey = process.env.APPRAISE_CONSOLE_API_KEY || process.env.APPRAISE_API_KEY || (process.env.NODE_ENV === "development" ? "appraise_sk_demo_key_for_testing_only" : "");
 const workflow = "website_assistant";
-const assistantType = "sales";
+const assistantType = "general";
 
 const seedFacts = [
   {
