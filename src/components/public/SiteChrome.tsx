@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { ArrowUpRight, Brain, ChevronDown } from "lucide-react";
+import { PublicChatWidget } from "@/components/public/PublicChatWidget";
 
 const navGroups = [
   {
@@ -77,7 +78,8 @@ const footerGroups = [
 
 export function PublicHeader() {
   return (
-    <header className="sticky top-0 z-30 border-b border-slate-200/70 bg-white/80 backdrop-blur-xl">
+    <>
+      <header className="sticky top-0 z-30 border-b border-slate-200/70 bg-white/80 backdrop-blur-xl">
       <nav className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
         <Link href="/" className="flex items-center gap-3">
           <span className="flex h-9 w-9 items-center justify-center rounded-2xl bg-slate-950 text-white shadow-sm">
@@ -131,6 +133,8 @@ export function PublicHeader() {
         </div>
       </nav>
     </header>
+      <PublicChatWidget />
+    </>
   );
 }
 
