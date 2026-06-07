@@ -105,7 +105,9 @@ function matchesIntegrationIntent(message: string) {
   return /integrate\s+first/i.test(message)
     || /what\s+should\s+we\s+integrate\s+first/i.test(message)
     || /where\s+should\s+we\s+start/i.test(message)
-    || /what\s+should\s+we\s+build\s+first/i.test(message);
+    || /what\s+should\s+we\s+build\s+first/i.test(message)
+    || /how\s+(do|would|can|will)\s+(we\s+)?integrate\s+appraise/i.test(message)
+    || /how\s+to\s+integrate\s+appraise/i.test(message);
 }
 
 function getOperationalMemory(memories: string[]) {
@@ -171,7 +173,7 @@ function buildPublicAssistantReply(message: string, response: AppraiseChatRespon
       const operationsLine = operationalMemory
         ? ` Since ${productName} currently depends on manual conversation review, the first win is to track those support events automatically and retrieve them before each WhatsApp reply.`
         : "";
-      return `I would start with the customer-support loop for ${productName}: first track events like order delayed, refund offered, escalation requested, and preferred contact channel. Then before each WhatsApp reply, call Appraise context retrieval with the customer session so the agent sees the right memories and next actions.${operationsLine}`;
+      return `I would integrate Appraise into ${productName} in four steps: first track support events like order delayed, refund offered, escalation requested, and preferred contact channel. Second, keep a stable customer session for each WhatsApp thread. Third, before each reply, call Appraise context retrieval with that customer session. Fourth, inject the returned context into your LLM prompt so the agent sees the right memories and next actions before responding.${operationsLine}`;
     }
     return "I would start by tracking the highest-signal product events first, then retrieve Appraise context right before your assistant replies. That gives you the shortest path to a real memory win.";
   }
