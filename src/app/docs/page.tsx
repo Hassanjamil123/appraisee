@@ -26,6 +26,7 @@ const sections = [
   { id: "auth", label: "Authentication" },
   { id: "track-api", label: "Track API" },
   { id: "context-api", label: "Context API" },
+  { id: "quickai", label: "QuickAI example" },
   { id: "llm-reasoning", label: "Using with LLMs" },
   { id: "compare", label: "Chatbot compare" },
   { id: "plans", label: "Plans and limits" },
@@ -101,6 +102,19 @@ const curlContext = `curl -X POST http://localhost:3001/v1/context \\
     "workflow":"customer_support",
     "intent":"should_we_refund",
     "query":"Where is my order? I already asked yesterday."
+  }'`;
+
+const quickAiRouteSnippet = `curl -X POST https://inspiring-enjoyment-production-ab0c.up.railway.app/v1/internal/quickai/reply \
+  -H "Authorization: Bearer appraise_sk_demo_key_for_testing_only" \
+  -H "X-Appraise-User-Id: <your-appraise-user-id>" \
+  -H "X-Appraise-User-Email: <your-appraise-email>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "customerId": "cust_123",
+    "whatsappThreadId": "thread_8842",
+    "message": "Where is my order? I already asked yesterday.",
+    "orderId": "ORD-8842",
+    "currentHandling": "We normally look through conversations manually"
   }'`;
 
 const compareSnippet = `POST /v1/chatbots/compare
@@ -392,6 +406,30 @@ export default function DocsPage() {
               onCopy={() => copyToClipboard(curlContext, "context")}
               copied={copied === "context"}
             />
+          </DocSection>
+
+
+          <DocSection id="quickai" icon={<Bot className="h-5 w-5 text-blue-600" />} title="QuickAI example">
+            <p className="text-slate-600">
+              This is the canonical end-to-end Appraise flow for a real AI product: QuickAI, a WhatsApp support agent for ecommerce businesses. It tracks the incoming customer message, carries forward the active workspace, retrieves the best support context, and compares a stateless reply against one that uses Appraise memory.
+            </p>
+            <CodeBlock
+              label="POST /v1/internal/quickai/reply"
+              text={quickAiRouteSnippet}
+              onCopy={() => copyToClipboard(quickAiRouteSnippet, "quickai")}
+              copied={copied === "quickai"}
+            />
+            <FieldTable
+              rows={[
+                ["customerId", "string", "Your stable customer identifier inside QuickAI."],
+                ["whatsappThreadId", "string", "The active WhatsApp thread or conversation id."],
+                ["message", "string", "The latest customer message before your assistant replies."],
+                ["currentHandling", "string", "Optional note about the current manual support process you want to replace."],
+              ]}
+            />
+            <div className="mt-5 rounded-2xl border border-slate-200 bg-white p-5 text-sm leading-7 text-slate-600">
+              The response gives you both replies plus the debugging surface developers actually need: remembered context, urgency signals, prompt payloads, and next integration steps.
+            </div>
           </DocSection>
 
           <DocSection id="llm-reasoning" icon={<Sparkles className="h-5 w-5 text-blue-600" />} title="Using Appraise with LLMs">
