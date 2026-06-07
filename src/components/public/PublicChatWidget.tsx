@@ -28,15 +28,41 @@ type PublicChatResponse = {
 const sessionStorageKey = "appraise_public_chat_session";
 const messagesStorageKey = "appraise_public_chat_messages";
 const seededStorageKey = "appraise_public_chat_seeded";
+const starterPrompts = [
+  "What do you remember about my use case?",
+  "How could Appraise help us?",
+  "What should we integrate first?",
+];
 const defaultAssistantMessage: ChatMessage = {
   id: "welcome",
   role: "assistant",
-  text: "Hi — I’m the Appraise demo assistant. Ask me what Appraise does, tell me about your use case, and then keep talking so you can feel the memory hold across turns.",
-  meta: "This thread persists in this browser so you can test memory over time.",
+  text: "Hi — I’m the Appraise demo assistant. Tell me about your product, then ask a follow-up so you can feel the memory hold across turns.",
+  meta: "This thread persists in this browser so you can test Appraise memory over time.",
 };
 
 function createSessionId() {
   return `public_demo_${crypto.randomUUID()}`;
+}
+
+function inferRememberedTags(messages: ChatMessage[]) {
+  const userText = messages
+    .filter((message) => message.role === "user")
+    .map((message) => message.text)
+    .join(" ");
+
+  if (!userText.trim()) return [] as string[];
+
+  const tags = new Set<string>();
+  const knownAsMatch = userText.match(/known as\s+([A-Za-z0-9_-]+)/i);
+  if (knownAsMatch?.[1]) tags.add(knownAsMatch[1]);
+  if (/whatsapp/i.test(userText)) tags.add("WhatsApp");
+  if (/ecommerce/i.test(userText)) tags.add("Ecommerce");
+  if (/customer support/i.test(userText)) tags.add("Customer support");
+  if (/sales/i.test(userText)) tags.add("Sales");
+  if (/healthcare|triage|clinical/i.test(userText)) tags.add("Healthcare");
+  if (/recruiting|candidate|hiring/i.test(userText)) tags.add("Recruiting");
+
+  return Array.from(tags).slice(0, 4);
 }
 
 export function PublicChatWidget() {
@@ -78,9 +104,10 @@ export function PublicChatWidget() {
   }, [messages]);
 
   const canSend = useMemo(() => input.trim().length > 0 && !loading && sessionId, [input, loading, sessionId]);
+  const rememberedTags = useMemo(() => inferRememberedTags(messages), [messages]);
 
-  async function sendMessage() {
-    const trimmed = input.trim();
+  async function sendMessage(prefilled?: string) {
+    const trimmed = (prefilled ?? input).trim();
     if (!trimmed || !sessionId) return;
 
     const userMessage: ChatMessage = {
@@ -174,7 +201,7 @@ export function PublicChatWidget() {
                 </div>
                 <h2 className="mt-3 text-lg font-semibold text-slate-950">Ask the Appraise assistant</h2>
                 <p className="mt-1 text-xs leading-5 text-slate-600">
-                  This thread sticks to one Appraise session so you can test memory, context, and follow-ups.
+                  Tell it about your product, then ask follow-ups to watch the memory stay intact.
                 </p>
               </div>
               <button type="button" onClick={() => setOpen(false)} className="rounded-full p-2 text-slate-500 hover:bg-slate-100 hover:text-slate-900">
@@ -185,12 +212,38 @@ export function PublicChatWidget() {
             <div className="flex items-center justify-between gap-3 border-b border-slate-200 px-5 py-3 text-xs text-slate-500">
               <div className="flex items-center gap-2">
                 <Sparkles className="h-3.5 w-3.5 text-blue-600" />
-                Session memory active
+                Powered by Appraise memory
               </div>
               <button type="button" onClick={resetThread} className="inline-flex items-center gap-1 rounded-full border border-slate-200 px-3 py-1 font-medium text-slate-600 hover:border-slate-300 hover:text-slate-900">
                 <RotateCcw className="h-3.5 w-3.5" />
                 Reset
               </button>
+            </div>
+
+            <div className="border-b border-slate-200 bg-white px-4 py-3">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">Starter prompts</p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                {starterPrompts.map((prompt) => (
+                  <button
+                    key={prompt}
+                    type="button"
+                    onClick={() => void sendMessage(prompt)}
+                    disabled={loading || !sessionId}
+                    className="rounded-full border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-medium text-slate-600 hover:border-slate-300 hover:text-slate-900 disabled:opacity-40"
+                  >
+                    {prompt}
+                  </button>
+                ))}
+              </div>
+              {rememberedTags.length > 0 ? (
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {rememberedTags.map((tag) => (
+                    <span key={tag} className="rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-[11px] font-medium text-blue-700">
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+              ) : null}
             </div>
 
             <div className="flex-1 space-y-3 overflow-y-auto bg-slate-50 px-4 py-4">
@@ -224,7 +277,7 @@ export function PublicChatWidget() {
                       if (canSend) void sendMessage();
                     }
                   }}
-                  placeholder="Tell me about your agent, then ask a follow-up so you can test memory."
+                  placeholder="Tell me about your product, then ask a follow-up."
                   className="min-h-[84px] flex-1 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm leading-6 text-slate-700 outline-none focus:border-blue-400"
                 />
                 <button
