@@ -28,6 +28,24 @@ const seedFacts = [
   },
 ];
 
+type AppraiseChatResponse = {
+  chatbot?: {
+    response?: string;
+    provider?: string;
+    model?: string;
+    usedMemories?: number;
+  };
+  context?: {
+    recentMemories?: Array<{ id: string; content: string; relevanceScore: number }>;
+    urgencySignals?: string[];
+    suggestedActions?: string[];
+    inferredGoals?: string[];
+  };
+  stored?: unknown;
+  request?: unknown;
+  debug?: unknown;
+};
+
 async function appraiseFetch(path: string, payload: unknown) {
   const response = await fetch(`${apiUrl}${path}`, {
     method: "POST",
@@ -69,6 +87,71 @@ async function seedSession(sessionId: string, page: string) {
   );
 }
 
+function normalizeMemory(content: string) {
+  return content.replace(/^User message:\s*/i, "").trim();
+}
+
+function unique(values: string[]) {
+  return [...new Set(values.filter(Boolean))];
+}
+
+function getUserMemories(response: AppraiseChatResponse, currentMessage: string) {
+  const lowerCurrent = currentMessage.trim().toLowerCase();
+  return unique(
+    (response.context?.recentMemories || [])
+      .filter((memory) => memory.content.toLowerCase().startsWith("user message:"))
+      .map((memory) => normalizeMemory(memory.content))
+      .filter((memory) => memory.toLowerCase() !== lowerCurrent)
+      .filter((memory) => !memory.trim().endsWith("?"))
+  );
+}
+
+function inferUseCase(memories: string[]) {
+  const joined = memories.join(" ").toLowerCase();
+  const isSupport = joined.includes("customer support") || joined.includes("ecommerce") || joined.includes("whatsapp");
+  return {
+    isSupport,
+    mentionsWhatsapp: joined.includes("whatsapp"),
+    mentionsEcommerce: joined.includes("ecommerce"),
+    productName: memories.find((memory) => /known as\s+([A-Za-z0-9_-]+)/i.test(memory))?.match(/known as\s+([A-Za-z0-9_-]+)/i)?.[1] || null,
+  };
+}
+
+function buildPublicAssistantReply(message: string, response: AppraiseChatResponse) {
+  const lowerMessage = message.toLowerCase();
+  const userMemories = getUserMemories(response, message);
+  const useCase = inferUseCase(userMemories);
+  const firstMemory = userMemories[0];
+  const productName = useCase.productName || "your assistant";
+
+  if (lowerMessage.includes("remember")) {
+    if (firstMemory) {
+      return `Here is what I remember about your use case: ${firstMemory}. I’m keeping that separate from the general Appraise product facts so I can answer from your context first.`;
+    }
+    return "I do not have a clear user-specific memory yet beyond this thread starting point. Tell me a bit more about your product and I’ll hold onto it across turns.";
+  }
+
+  if (lowerMessage.includes("how could appraise help") || lowerMessage.includes("how can appraise help")) {
+    if (useCase.isSupport) {
+      return `For ${productName}, Appraise could remember repeat-customer context across WhatsApp conversations: order issues, refund history, escalation state, customer tone, and channel preferences. The key win is that before your agent replies, it can retrieve the right context for that customer instead of treating every message like a fresh thread.`;
+    }
+    return `Appraise would help by tracking what happened in your product, retrieving the most relevant context before each reply, and then giving the model a much better memory surface than raw transcript stuffing.`;
+  }
+
+  if (lowerMessage.includes("integrate first") || lowerMessage.includes("what should we integrate first")) {
+    if (useCase.isSupport) {
+      return `I would start with the customer-support loop for ${productName}: first track events like order delayed, refund offered, escalation requested, and preferred contact channel. Then before each WhatsApp reply, call Appraise context retrieval with the customer session so the agent sees the right memories and next actions.`;
+    }
+    return "I would start by tracking the highest-signal product events first, then retrieve Appraise context right before your assistant replies. That gives you the shortest path to a real memory win.";
+  }
+
+  if (firstMemory) {
+    return `That sounds like a strong Appraise use case. I’m holding onto this context: ${firstMemory}. Tell me how ${productName} currently handles repeat conversations, and I can suggest the best first integration path.`;
+  }
+
+  return response.chatbot?.response || "I can help you explore how Appraise would fit into your product. Tell me about your use case and I’ll keep the thread context across turns.";
+}
+
 export async function POST(request: NextRequest) {
   try {
     if (!apiKey) {
@@ -88,7 +171,7 @@ export async function POST(request: NextRequest) {
       await seedSession(sessionId, page);
     }
 
-    const response = await appraiseFetch("/v1/chatbots/respond", {
+    const response = (await appraiseFetch("/v1/chatbots/respond", {
       type: assistantType,
       sessionId,
       workflow,
@@ -99,9 +182,17 @@ export async function POST(request: NextRequest) {
       },
       maxMemories: 8,
       maxEntities: 5,
-    });
+    })) as AppraiseChatResponse;
 
-    return NextResponse.json(response);
+    const rewrittenResponse = buildPublicAssistantReply(message, response);
+
+    return NextResponse.json({
+      ...response,
+      chatbot: {
+        ...(response.chatbot || {}),
+        response: rewrittenResponse,
+      },
+    });
   } catch (error) {
     return NextResponse.json(
       { error: { message: error instanceof Error ? error.message : "Unable to answer public chat request" } },
