@@ -33,7 +33,7 @@ const sections = [
   { id: "plans", label: "Plans and limits" },
 ];
 
-const quickstartTs = `import { Appraise } from "@appraise/sdk";
+const quickstartTs = `import { Appraise } from "@myappraise/sdk";
 
 const appraise = new Appraise({
   apiKey: process.env.APPRAISE_API_KEY
@@ -105,7 +105,7 @@ const curlContext = `curl -X POST http://localhost:3001/v1/context \\
     "query":"Where is my order? I already asked yesterday."
   }'`;
 
-const genericAiAppSnippet = `import { Appraise } from "@appraise/sdk";
+const genericAiAppSnippet = `import { Appraise } from "@myappraise/sdk";
 
 const appraise = new Appraise({
   apiKey: process.env.APPRAISE_API_KEY,
@@ -353,8 +353,8 @@ export default function DocsPage() {
             </div>
             <CodeBlock
               label="Terminal"
-              text={activeTab === "ts" ? "npm install @appraise/sdk" : "pip install appraise"}
-              onCopy={() => copyToClipboard(activeTab === "ts" ? "npm install @appraise/sdk" : "pip install appraise", "install")}
+              text={activeTab === "ts" ? "npm install @myappraise/sdk" : "pip install appraise"}
+              onCopy={() => copyToClipboard(activeTab === "ts" ? "npm install @myappraise/sdk" : "pip install appraise", "install")}
               copied={copied === "install"}
             />
           </DocSection>
