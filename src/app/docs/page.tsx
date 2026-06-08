@@ -26,6 +26,7 @@ const sections = [
   { id: "auth", label: "Authentication" },
   { id: "track-api", label: "Track API" },
   { id: "context-api", label: "Context API" },
+  { id: "ai-apps", label: "AI apps example" },
   { id: "quickai", label: "QuickAI example" },
   { id: "llm-reasoning", label: "Using with LLMs" },
   { id: "compare", label: "Chatbot compare" },
@@ -103,6 +104,32 @@ const curlContext = `curl -X POST http://localhost:3001/v1/context \\
     "intent":"should_we_refund",
     "query":"Where is my order? I already asked yesterday."
   }'`;
+
+const genericAiAppSnippet = `import { Appraise } from "@appraise/sdk";
+
+const appraise = new Appraise({
+  apiKey: process.env.APPRAISE_API_KEY,
+  baseUrl: process.env.APPRAISE_API_URL,
+});
+
+await appraise.track({
+  sessionId: "account_acme_123",
+  workflow: "account_review",
+  event: "user_message_received",
+  content: "Summarize the current blockers for this account.",
+  metadata: {
+    accountId: "acme_123",
+    surface: "internal_ai_workspace"
+  },
+  createMemory: false
+});
+
+const context = await appraise.context.get({
+  sessionId: "account_acme_123",
+  workflow: "account_review",
+  intent: "generate_next_best_response",
+  query: "Summarize the current blockers for this account."
+});`;
 
 const quickAiRouteSnippet = `curl -X POST https://inspiring-enjoyment-production-ab0c.up.railway.app/v1/internal/quickai/reply \
   -H "Authorization: Bearer appraise_sk_demo_key_for_testing_only" \
@@ -405,6 +432,27 @@ export default function DocsPage() {
               text={curlContext}
               onCopy={() => copyToClipboard(curlContext, "context")}
               copied={copied === "context"}
+            />
+          </DocSection>
+
+
+          <DocSection id="ai-apps" icon={<Workflow className="h-5 w-5 text-blue-600" />} title="AI apps example">
+            <p className="text-slate-600">
+              Appraise is broader than chat. Any AI application can track the important product event, retrieve the smallest useful context window, and inject that context before the model reasons.
+            </p>
+            <CodeBlock
+              label="generic-ai-app.ts"
+              text={genericAiAppSnippet}
+              onCopy={() => copyToClipboard(genericAiAppSnippet, "generic-ai-app")}
+              copied={copied === "generic-ai-app"}
+            />
+            <FieldTable
+              rows={[
+                ["sessionId", "string", "The account, case, document, or workflow thread your AI app is working inside."],
+                ["workflow", "string", "The process boundary, such as account_review, onboarding, triage, or escalation."],
+                ["track(...)", "call", "Record the meaningful event before reasoning so Appraise has fresh product context."],
+                ["context.get(...)", "call", "Retrieve memories, urgency, and suggested actions right before the model replies."],
+              ]}
             />
           </DocSection>
 
