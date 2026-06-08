@@ -1,132 +1,113 @@
 "use client";
 
-import React, { useState } from "react";
-import { Search, Filter, AlertCircle, RefreshCw } from "lucide-react";
-import { retrievalLogs } from "@/lib/mock-data";
-import { timeAgo, formatLatency } from "@/lib/utils";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { AlertCircle, RefreshCw, Search } from "lucide-react";
+import { formatLatency, timeAgo } from "@/lib/utils";
+
+interface RetrievalLog {
+  id: string;
+  query: string;
+  userId?: string | null;
+  sessionId?: string | null;
+  workflow?: string | null;
+  resultCount: number;
+  latencyMs: number;
+  status: string;
+  createdAt: string;
+}
 
 export default function LogsDashboard() {
-  const [filterQuery, setFilterQuery] = useState("");
-  const [selectedStatus, setSelectedStatus] = useState<string>("all");
+  const [logs, setLogs] = useState<RetrievalLog[]>([]);
+  const [query, setQuery] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
-  const filteredLogs = retrievalLogs.filter((log) => {
-    const matchesQuery =
-      log.query.toLowerCase().includes(filterQuery.toLowerCase()) ||
-      log.userId.toLowerCase().includes(filterQuery.toLowerCase());
+  const load = useCallback(async () => {
+    setLoading(true);
+    setError("");
+    try {
+      const response = await fetch("/api/appraise/v1/logs?limit=100", { cache: "no-store" });
+      const body = await response.json();
+      if (!response.ok) throw new Error(body.error?.message || "Unable to load logs");
+      setLogs(body.logs || []);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Unable to load logs");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
-    const matchesStatus = selectedStatus === "all" || log.status === selectedStatus;
+  useEffect(() => {
+    const timeout = window.setTimeout(() => void load(), 0);
+    return () => window.clearTimeout(timeout);
+  }, [load]);
 
-    return matchesQuery && matchesStatus;
-  });
+  const filtered = useMemo(() => {
+    const needle = query.toLowerCase();
+    return logs.filter((log) =>
+      [log.query, log.userId, log.sessionId, log.workflow, log.status]
+        .some((value) => value?.toLowerCase().includes(needle))
+    );
+  }, [logs, query]);
 
   return (
-    <div className="space-y-8 animate-fade-in">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+    <div className="space-y-6 animate-fade-in">
+      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-950">Context Logs</h1>
-          <p className="text-xs text-text-secondary mt-1">
-            Real-time tracking of decision context requests.
-          </p>
+          <h1 className="text-2xl font-bold tracking-tight">Context Logs</h1>
+          <p className="mt-1 text-xs text-text-secondary">Inspect retrieval requests, latency, and which sessions are asking Appraise for memory.</p>
         </div>
-        <button className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-surface-2 border border-border-subtle hover:bg-surface-3 transition-colors text-slate-950">
-          <RefreshCw className="w-3.5 h-3.5" />
-          Refresh Streams
+        <button onClick={() => void load()} className="inline-flex items-center gap-2 rounded-lg border border-border-subtle bg-surface-2 px-3 py-2 text-xs font-semibold hover:bg-surface-3">
+          <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} />
+          Refresh logs
         </button>
       </div>
 
-      {/* Control bar */}
-      <div className="flex flex-col sm:flex-row gap-4 justify-between items-center p-4 rounded-xl border border-border-subtle bg-surface-1">
-        <div className="relative flex-1 w-full">
-          <Search className="w-4 h-4 text-text-tertiary absolute left-3 top-1/2 -translate-y-1/2" />
-          <input
-            type="text"
-            value={filterQuery}
-            onChange={(e) => setFilterQuery(e.target.value)}
-            placeholder="Search queries, user IDs..."
-            className="w-full pl-9 pr-4 py-2 rounded-lg text-xs bg-surface-2 border border-border-subtle focus:outline-none focus:border-accent-blue text-slate-950"
-          />
-        </div>
-        <div className="flex items-center gap-2 w-full sm:w-auto">
-          <Filter className="w-4 h-4 text-text-tertiary hidden sm:block" />
-          <select
-            value={selectedStatus}
-            onChange={(e) => setSelectedStatus(e.target.value)}
-            className="w-full sm:w-auto px-3 py-2 rounded-lg text-xs bg-surface-2 border border-border-subtle text-slate-950 focus:outline-none focus:border-accent-blue"
-          >
-            <option value="all">All Statuses</option>
-            <option value="success">Success</option>
-            <option value="partial">Partial</option>
-            <option value="error">Error</option>
-          </select>
-        </div>
+      <div className="grid gap-4 sm:grid-cols-4">
+        <Metric label="Requests" value={logs.length.toString()} />
+        <Metric label="Success" value={logs.filter((log) => log.status === "success").length.toString()} />
+        <Metric label="Average latency" value={logs.length ? formatLatency(Math.round(logs.reduce((sum, log) => sum + log.latencyMs, 0) / logs.length)) : "0ms"} />
+        <Metric label="Sessions" value={new Set(logs.map((log) => log.sessionId).filter(Boolean)).size.toString()} />
       </div>
 
-      {/* Table grid layout */}
-      <div className="border border-border-subtle rounded-xl overflow-hidden bg-surface-1">
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-text-tertiary" />
+        <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search query, session, workflow, or status..." className="w-full rounded-xl border border-border-subtle bg-surface-1 py-3 pl-10 pr-4 text-xs outline-none focus:border-accent-blue" />
+      </div>
+
+      {error ? <ErrorState message={error} /> : null}
+
+      <div className="overflow-hidden rounded-xl border border-border-subtle bg-surface-1">
         <div className="overflow-x-auto">
-          <table className="w-full border-collapse text-left text-xs">
-            <thead>
-              <tr className="border-b border-border-subtle bg-surface-2/50 text-text-secondary font-bold">
-                <th className="p-4">Query</th>
-                <th className="p-4">User ID</th>
-                <th className="p-4">Recall Items</th>
-                <th className="p-4">Latency</th>
-                <th className="p-4">Status</th>
-                <th className="p-4">Timestamp</th>
-              </tr>
+          <table className="w-full min-w-[820px] text-left text-xs">
+            <thead className="border-b border-border-subtle bg-surface-2/60 text-text-secondary">
+              <tr><th className="p-4">Query</th><th className="p-4">Session</th><th className="p-4">Workflow</th><th className="p-4">Results</th><th className="p-4">Latency</th><th className="p-4">Status</th><th className="p-4">Created</th></tr>
             </thead>
-            <tbody className="divide-y divide-border-subtle text-text-secondary">
-              {filteredLogs.length > 0 ? (
-                filteredLogs.map((log) => (
-                  <tr key={log.id} className="hover:bg-surface-2/30 transition-all">
-                    <td className="p-4 font-mono text-slate-950 max-w-xs truncate" title={log.query}>
-                      {log.query}
-                    </td>
-                    <td className="p-4 font-mono text-xs">{log.userId}</td>
-                    <td className="p-4 font-semibold text-slate-950">{log.results} matches</td>
-                    <td className="p-4 font-mono">
-                      <span
-                        className={`${
-                          log.latency < 20
-                            ? "text-green-700"
-                            : log.latency < 50
-                            ? "text-yellow-700"
-                            : "text-red-600"
-                        }`}
-                      >
-                        {formatLatency(log.latency)}
-                      </span>
-                    </td>
-                    <td className="p-4">
-                      <span
-                        className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wider border ${
-                          log.status === "success"
-                            ? "bg-green-500/10 border-green-500/20 text-green-700"
-                            : log.status === "partial"
-                            ? "bg-yellow-500/10 border-yellow-500/20 text-yellow-700"
-                            : "bg-red-500/10 border-red-500/20 text-red-600"
-                        }`}
-                      >
-                        {log.status}
-                      </span>
-                    </td>
-                    <td className="p-4">{timeAgo(log.timestamp)}</td>
-                  </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan={6} className="p-12 text-center">
-                    <div className="flex flex-col items-center justify-center">
-                      <AlertCircle className="w-8 h-8 text-text-tertiary mb-3 animate-pulse" />
-                      <span className="text-xs font-semibold text-slate-950">No query logs found</span>
-                    </div>
-                  </td>
+            <tbody className="divide-y divide-border-subtle">
+              {filtered.map((log) => (
+                <tr key={log.id} className="hover:bg-surface-2/40">
+                  <td className="p-4"><div className="font-medium text-slate-950">{log.query}</div><div className="mt-1 font-mono text-[10px] text-text-tertiary">{log.id}</div></td>
+                  <td className="p-4 font-mono text-[11px] text-text-secondary">{log.sessionId || "—"}</td>
+                  <td className="p-4 font-mono text-[11px] text-text-secondary">{log.workflow || "unscoped"}</td>
+                  <td className="p-4 text-slate-950">{log.resultCount}</td>
+                  <td className="p-4 font-mono text-slate-950">{formatLatency(log.latencyMs)}</td>
+                  <td className="p-4"><span className="rounded-full border border-blue-500/20 bg-blue-500/10 px-2 py-1 text-[10px] text-blue-700 capitalize">{log.status}</span></td>
+                  <td className="p-4 text-text-tertiary">{timeAgo(log.createdAt)}</td>
                 </tr>
-              )}
+              ))}
             </tbody>
           </table>
         </div>
+        {!loading && filtered.length === 0 ? <div className="p-10 text-center text-xs text-text-secondary">No retrieval logs yet. Use the context playground, chatbot lab, or your SDK app to generate some.</div> : null}
       </div>
     </div>
   );
+}
+
+function Metric({ label, value }: { label: string; value: string }) {
+  return <div className="rounded-xl border border-border-subtle bg-surface-1 p-5"><p className="text-2xl font-bold">{value}</p><p className="mt-1 text-[11px] text-text-secondary">{label}</p></div>;
+}
+
+function ErrorState({ message }: { message: string }) {
+  return <div className="flex items-center gap-3 rounded-xl border border-red-500/20 bg-red-500/5 p-4 text-xs text-red-700"><AlertCircle className="h-4 w-4" />{message}</div>;
 }

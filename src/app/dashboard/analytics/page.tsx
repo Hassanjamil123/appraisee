@@ -1,133 +1,148 @@
 "use client";
 
-import React from "react";
+import { useCallback, useEffect, useState } from "react";
+import { AlertCircle, BarChart3, Brain, Activity, Timer } from "lucide-react";
 import {
-  AreaChart,
   Area,
-  BarChart,
+  AreaChart,
   Bar,
-  LineChart,
-  Line,
+  BarChart,
+  CartesianGrid,
+  ResponsiveContainer,
+  Tooltip,
   XAxis,
   YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
 } from "recharts";
-import { retrievalGrowthData, agentInteractionsData, userMemoryActivityData } from "@/lib/mock-data";
-import { Brain, Zap, Target, HelpCircle } from "lucide-react";
+import { formatLatency, formatNumber } from "@/lib/utils";
+
+interface StatsResponse {
+  totalMemories: number;
+  activeMemories: number;
+  totalEntities: number;
+  totalWorkflows: number;
+  activeWorkflows: number;
+  totalAgents: number;
+  apiCallsToday: number;
+  avgLatencyMs: number;
+  topWorkflows: Array<{ name: string; count: number }>;
+}
+
+interface MetricsResponse {
+  metrics: Array<{
+    date: string;
+    memoriesCreated: number;
+    apiCalls: number;
+  }>;
+}
 
 export default function AnalyticsDashboard() {
+  const [stats, setStats] = useState<StatsResponse | null>(null);
+  const [metrics, setMetrics] = useState<MetricsResponse["metrics"]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    setError("");
+    try {
+      const [statsResponse, metricsResponse] = await Promise.all([
+        fetch("/api/appraise/v1/stats", { cache: "no-store" }),
+        fetch("/api/appraise/v1/metrics?days=14", { cache: "no-store" }),
+      ]);
+      const statsBody = await statsResponse.json();
+      const metricsBody = await metricsResponse.json();
+      if (!statsResponse.ok) throw new Error(statsBody.error?.message || "Unable to load analytics");
+      if (!metricsResponse.ok) throw new Error(metricsBody.error?.message || "Unable to load metrics");
+      setStats(statsBody);
+      setMetrics(metricsBody.metrics || []);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Unable to load analytics");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    const timeout = window.setTimeout(() => void load(), 0);
+    return () => window.clearTimeout(timeout);
+  }, [load]);
+
   return (
-    <div className="space-y-8 animate-fade-in">
+    <div className="space-y-6 animate-fade-in">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight text-slate-950">Analytics</h1>
-        <p className="text-xs text-text-secondary mt-1">
-          Detailed metrics for workflow context and API call operations.
-        </p>
+        <h1 className="text-2xl font-bold tracking-tight">Analytics</h1>
+        <p className="mt-1 text-xs text-text-secondary">Live project usage, memory growth, and retrieval activity from your Appraise workspace.</p>
       </div>
 
-      {/* Grid top statistics widgets */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="p-6 rounded-xl border border-border-subtle bg-surface-1 flex items-center justify-between">
-          <div>
-            <span className="text-xs text-text-secondary font-medium">Monthly API Volume</span>
-            <h3 className="text-xl font-bold text-slate-950 mt-1">12,584,201</h3>
-          </div>
-          <div className="p-2.5 rounded-lg bg-accent-blue/10 border border-accent-blue/20 text-accent-blue">
-            <Zap className="w-5 h-5" />
-          </div>
-        </div>
+      {error ? <ErrorState message={error} /> : null}
 
-        <div className="p-6 rounded-xl border border-border-subtle bg-surface-1 flex items-center justify-between">
-          <div>
-            <span className="text-xs text-text-secondary font-medium">Context Growth Index</span>
-            <h3 className="text-xl font-bold text-slate-950 mt-1">+24.3%</h3>
-          </div>
-          <div className="p-2.5 rounded-lg bg-accent-purple/10 border border-accent-purple/20 text-accent-purple">
-            <Brain className="w-5 h-5" />
-          </div>
-        </div>
-
-        <div className="p-6 rounded-xl border border-border-subtle bg-surface-1 flex items-center justify-between">
-          <div>
-            <span className="text-xs text-text-secondary font-medium">Context Precision Range</span>
-            <h3 className="text-xl font-bold text-slate-950 mt-1">97.3%</h3>
-          </div>
-          <div className="p-2.5 rounded-lg bg-emerald-400/10 border border-emerald-400/20 text-emerald-700">
-            <Target className="w-5 h-5" />
-          </div>
-        </div>
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <MetricCard label="Total memories" value={stats ? formatNumber(stats.totalMemories) : "—"} icon={Brain} />
+        <MetricCard label="Entities" value={stats ? formatNumber(stats.totalEntities) : "—"} icon={Activity} />
+        <MetricCard label="API calls today" value={stats ? formatNumber(stats.apiCallsToday) : "—"} icon={BarChart3} />
+        <MetricCard label="Average latency" value={stats ? formatLatency(stats.avgLatencyMs) : "—"} icon={Timer} />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Large area graph */}
-        <div className="p-6 rounded-xl border border-border-subtle bg-surface-1 flex flex-col">
-          <h3 className="text-sm font-bold text-slate-950 mb-6">Context Growth (KB)</h3>
-          <div className="h-64">
+      <div className="grid gap-6 lg:grid-cols-2">
+        <section className="rounded-xl border border-border-subtle bg-surface-1 p-5">
+          <h2 className="text-sm font-bold">Memory growth</h2>
+          <p className="mt-1 text-[11px] text-text-secondary">Memories created in the last 14 days.</p>
+          <div className="mt-5 h-72">
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={retrievalGrowthData}>
-                <defs>
-                  <linearGradient id="glowPurple" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.25} />
-                    <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0} />
-                  </linearGradient>
-                </defs>
+              <AreaChart data={metrics}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} />
                 <XAxis dataKey="date" stroke="#71717a" fontSize={10} tickLine={false} />
                 <YAxis stroke="#71717a" fontSize={10} tickLine={false} />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: "#111",
-                    borderColor: "rgba(255,255,255,0.08)",
-                    borderRadius: "8px",
-                    color: "#fff",
-                    fontSize: "12px",
-                  }}
-                />
-                <Area
-                  type="monotone"
-                  dataKey="value"
-                  stroke="#8b5cf6"
-                  strokeWidth={2}
-                  fillOpacity={1}
-                  fill="url(#glowPurple)"
-                />
+                <Tooltip />
+                <Area type="monotone" dataKey="memoriesCreated" stroke="#8b5cf6" fill="#8b5cf6" fillOpacity={0.16} strokeWidth={2} />
               </AreaChart>
             </ResponsiveContainer>
           </div>
-        </div>
+        </section>
 
-        {/* Small line graph */}
-        <div className="p-6 rounded-xl border border-border-subtle bg-surface-1 flex flex-col">
-          <h3 className="text-sm font-bold text-slate-950 mb-6">Latency Trends (ms)</h3>
-          <div className="h-64">
+        <section className="rounded-xl border border-border-subtle bg-surface-1 p-5">
+          <h2 className="text-sm font-bold">Context requests</h2>
+          <p className="mt-1 text-[11px] text-text-secondary">Retrieval volume over the same period.</p>
+          <div className="mt-5 h-72">
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={agentInteractionsData}>
+              <BarChart data={metrics}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} />
                 <XAxis dataKey="date" stroke="#71717a" fontSize={10} tickLine={false} />
                 <YAxis stroke="#71717a" fontSize={10} tickLine={false} />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: "#111",
-                    borderColor: "rgba(255,255,255,0.08)",
-                    borderRadius: "8px",
-                    color: "#fff",
-                    fontSize: "12px",
-                  }}
-                />
-                <Line
-                  type="monotone"
-                  dataKey="value"
-                  stroke="#f59e0b"
-                  strokeWidth={2}
-                  dot={{ r: 2 }}
-                />
-              </LineChart>
+                <Tooltip />
+                <Bar dataKey="apiCalls" fill="#3b82f6" radius={[6, 6, 0, 0]} />
+              </BarChart>
             </ResponsiveContainer>
           </div>
-        </div>
+        </section>
       </div>
+
+      <section className="rounded-xl border border-border-subtle bg-surface-1 p-5">
+        <h2 className="text-sm font-bold">Top workflows</h2>
+        <p className="mt-1 text-[11px] text-text-secondary">Which workflow labels are producing the most memory right now.</p>
+        <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+          {(stats?.topWorkflows || []).map((workflow) => (
+            <div key={workflow.name} className="rounded-lg bg-surface-2 p-4">
+              <p className="font-mono text-[11px] text-slate-950">{workflow.name}</p>
+              <p className="mt-2 text-2xl font-bold">{formatNumber(workflow.count)}</p>
+              <p className="text-[11px] text-text-secondary">memories</p>
+            </div>
+          ))}
+          {!loading && (stats?.topWorkflows || []).length === 0 ? (
+            <div className="rounded-lg border border-dashed border-border-medium bg-surface-2/50 p-5 text-xs text-text-secondary">
+              No workflow data yet. Start sending workflow-tagged events or use the support demo / SDK test app.
+            </div>
+          ) : null}
+        </div>
+      </section>
     </div>
   );
+}
+
+function MetricCard({ label, value, icon: Icon }: { label: string; value: string; icon: typeof Brain }) {
+  return <div className="rounded-xl border border-border-subtle bg-surface-1 p-5"><Icon className="h-4 w-4 text-accent-blue" /><p className="mt-4 text-2xl font-bold">{value}</p><p className="mt-1 text-[11px] text-text-secondary">{label}</p></div>;
+}
+
+function ErrorState({ message }: { message: string }) {
+  return <div className="flex items-center gap-3 rounded-xl border border-red-500/20 bg-red-500/5 p-4 text-xs text-red-700"><AlertCircle className="h-4 w-4" />{message}</div>;
 }

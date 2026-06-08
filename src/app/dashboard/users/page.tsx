@@ -1,98 +1,108 @@
 "use client";
 
-import React, { useState } from "react";
-import { Search, UserPlus } from "lucide-react";
-import { users } from "@/lib/mock-data";
-import { timeAgo, formatNumber } from "@/lib/utils";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { AlertCircle, Search, Users } from "lucide-react";
+import { formatNumber, timeAgo } from "@/lib/utils";
+
+interface ConsoleUser {
+  id: string;
+  name: string;
+  email: string;
+  status: string;
+  role?: string;
+  memoriesCount: number;
+  lastActive?: string | null;
+  createdAt: string;
+}
 
 export default function UsersDashboard() {
-  const [search, setSearch] = useState("");
+  const [users, setUsers] = useState<ConsoleUser[]>([]);
+  const [query, setQuery] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
-  const filteredUsers = users.filter(
-    (u) =>
-      u.name.toLowerCase().includes(search.toLowerCase()) ||
-      u.email.toLowerCase().includes(search.toLowerCase())
-  );
+  const load = useCallback(async () => {
+    setLoading(true);
+    setError("");
+    try {
+      const response = await fetch("/api/appraise/v1/users", { cache: "no-store" });
+      const body = await response.json();
+      if (!response.ok) throw new Error(body.error?.message || "Unable to load users");
+      setUsers(body.users || []);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Unable to load users");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    const timeout = window.setTimeout(() => void load(), 0);
+    return () => window.clearTimeout(timeout);
+  }, [load]);
+
+  const filtered = useMemo(() => {
+    const needle = query.toLowerCase();
+    return users.filter((user) => `${user.name} ${user.email} ${user.role || ""}`.toLowerCase().includes(needle));
+  }, [users, query]);
 
   return (
-    <div className="space-y-8 animate-fade-in">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-950">Users</h1>
-          <p className="text-xs text-text-secondary mt-1">
-            Browse and debug context signals stored per user profile.
-          </p>
-        </div>
-        <button className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-gradient-to-r from-accent-blue to-accent-purple hover:opacity-90 text-white transition-opacity">
-          <UserPlus className="w-4 h-4" />
-          Create User
-        </button>
+    <div className="space-y-6 animate-fade-in">
+      <div>
+        <h1 className="text-2xl font-bold tracking-tight">Users</h1>
+        <p className="mt-1 text-xs text-text-secondary">Workspace members and actor identities that have produced Appraise activity.</p>
       </div>
 
-      {/* Control bar */}
-      <div className="p-4 rounded-xl border border-border-subtle bg-surface-1">
-        <div className="relative max-w-md">
-          <Search className="w-4 h-4 text-text-tertiary absolute left-3 top-1/2 -translate-y-1/2" />
-          <input
-            type="text"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search users by name, email..."
-            className="w-full pl-9 pr-4 py-2 rounded-lg text-xs bg-surface-2 border border-border-subtle focus:outline-none focus:border-accent-blue text-slate-950"
-          />
-        </div>
+      <div className="grid gap-4 sm:grid-cols-3">
+        <Metric label="Workspace users" value={users.length.toString()} />
+        <Metric label="Active identities" value={users.filter((user) => user.status === "active").length.toString()} />
+        <Metric label="Tracked signals" value={formatNumber(users.reduce((sum, user) => sum + user.memoriesCount, 0))} />
       </div>
 
-      {/* Users table */}
-      <div className="border border-border-subtle rounded-xl overflow-hidden bg-surface-1">
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-text-tertiary" />
+        <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search users by name, email, or role..." className="w-full rounded-xl border border-border-subtle bg-surface-1 py-3 pl-10 pr-4 text-xs outline-none focus:border-accent-blue" />
+      </div>
+
+      {error ? <ErrorState message={error} /> : null}
+
+      <div className="overflow-hidden rounded-xl border border-border-subtle bg-surface-1">
         <div className="overflow-x-auto">
-          <table className="w-full border-collapse text-left text-xs">
-            <thead>
-              <tr className="border-b border-border-subtle bg-surface-2/50 text-text-secondary font-bold">
-                <th className="p-4">User</th>
-                <th className="p-4">Context Signals</th>
-                <th className="p-4">Last Activity</th>
-                <th className="p-4">Status</th>
-                <th className="p-4">Created At</th>
-              </tr>
+          <table className="w-full min-w-[760px] text-left text-xs">
+            <thead className="border-b border-border-subtle bg-surface-2/60 text-text-secondary">
+              <tr><th className="p-4">User</th><th className="p-4">Role</th><th className="p-4">Tracked signals</th><th className="p-4">Last active</th><th className="p-4">Status</th><th className="p-4">Created</th></tr>
             </thead>
-            <tbody className="divide-y divide-border-subtle text-text-secondary">
-              {filteredUsers.map((user) => (
-                <tr key={user.id} className="hover:bg-surface-2/30 transition-all">
-                  <td className="p-4 flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-gradient-to-r from-accent-blue to-accent-purple p-[1px]">
-                      <div className="w-full h-full rounded-full bg-slate-950 flex items-center justify-center text-[10px] font-bold text-white uppercase">
-                        {user.name.slice(0, 2)}
-                      </div>
-                    </div>
-                    <div>
-                      <div className="font-semibold text-slate-950">{user.name}</div>
-                      <div className="text-[10px] text-text-tertiary">{user.email}</div>
-                    </div>
-                  </td>
-                  <td className="p-4 font-mono font-semibold text-slate-950">
-                    {formatNumber(user.memoriesCount)}
-                  </td>
-                  <td className="p-4">{timeAgo(user.lastActive)}</td>
+            <tbody className="divide-y divide-border-subtle">
+              {filtered.map((user) => (
+                <tr key={user.id} className="hover:bg-surface-2/40">
                   <td className="p-4">
-                    <span
-                      className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[10px] font-semibold border ${
-                        user.status === "active"
-                          ? "bg-green-500/10 border-green-500/20 text-green-700"
-                          : "bg-surface-2 border-border-subtle text-text-tertiary"
-                      }`}
-                    >
-                      <span className={`w-1.5 h-1.5 rounded-full ${user.status === "active" ? "bg-green-400" : "bg-text-tertiary"}`} />
+                    <div className="font-semibold text-slate-950">{user.name || user.email}</div>
+                    <div className="mt-1 text-[10px] text-text-tertiary">{user.email}</div>
+                  </td>
+                  <td className="p-4 capitalize text-text-secondary">{user.role || "member"}</td>
+                  <td className="p-4 font-mono text-slate-950">{formatNumber(user.memoriesCount)}</td>
+                  <td className="p-4 text-text-secondary">{user.lastActive ? timeAgo(user.lastActive) : "never"}</td>
+                  <td className="p-4">
+                    <span className="rounded-full border border-blue-500/20 bg-blue-500/10 px-2 py-1 text-[10px] text-blue-700 capitalize">
                       {user.status}
                     </span>
                   </td>
-                  <td className="p-4">{new Date(user.createdAt).toLocaleDateString()}</td>
+                  <td className="p-4 text-text-tertiary">{new Date(user.createdAt).toLocaleDateString()}</td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
+        {!loading && filtered.length === 0 ? <div className="p-10 text-center text-xs text-text-secondary">No users found for this workspace yet.</div> : null}
       </div>
     </div>
   );
+}
+
+function Metric({ label, value }: { label: string; value: string }) {
+  return <div className="rounded-xl border border-border-subtle bg-surface-1 p-5"><Users className="h-4 w-4 text-accent-blue" /><p className="mt-4 text-2xl font-bold">{value}</p><p className="mt-1 text-[11px] text-text-secondary">{label}</p></div>;
+}
+
+function ErrorState({ message }: { message: string }) {
+  return <div className="flex items-center gap-3 rounded-xl border border-red-500/20 bg-red-500/5 p-4 text-xs text-red-700"><AlertCircle className="h-4 w-4" />{message}</div>;
 }
