@@ -17,12 +17,12 @@ import {
   Terminal,
 } from "lucide-react";
 
-const installSnippet = `npm install @appraise/sdk`;
+const installSnippet = `npm i @myappraise/sdk`;
 
 const envSnippet = `APPRAISE_API_KEY=appraise_sk_demo_key_for_testing_only
 APPRAISE_API_URL=http://localhost:3001`;
 
-const trackSnippet = `import { Appraise } from "@appraise/sdk";
+const trackSnippet = `import { Appraise } from "@myappraise/sdk";
 
 const appraise = new Appraise({
   apiKey: process.env.APPRAISE_API_KEY,

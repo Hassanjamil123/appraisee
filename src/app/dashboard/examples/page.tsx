@@ -703,7 +703,7 @@ function buildIntegrationSnippet(example: ExampleConfig, question: string) {
     example.id === "recruiting" ? "recruitingAgent" :
     "supportBot";
 
-  return `import { Appraise } from "@appraise/sdk";
+  return `import { Appraise } from "@myappraise/sdk";
 
 const appraise = new Appraise({
   apiKey: process.env.APPRAISE_API_KEY,

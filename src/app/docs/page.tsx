@@ -353,8 +353,8 @@ export default function DocsPage() {
             </div>
             <CodeBlock
               label="Terminal"
-              text={activeTab === "ts" ? "npm install @myappraise/sdk" : "pip install appraise"}
-              onCopy={() => copyToClipboard(activeTab === "ts" ? "npm install @myappraise/sdk" : "pip install appraise", "install")}
+              text={activeTab === "ts" ? "npm i @myappraise/sdk" : "pip install appraise"}
+              onCopy={() => copyToClipboard(activeTab === "ts" ? "npm i @myappraise/sdk" : "pip install appraise", "install")}
               copied={copied === "install"}
             />
           </DocSection>

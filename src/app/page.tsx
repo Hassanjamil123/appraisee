@@ -19,7 +19,7 @@ import {
 } from "lucide-react";
 import { PublicFooter, PublicHeader } from "@/components/public/SiteChrome";
 
-const codeSample = `import { Appraise } from "@appraise/sdk";
+const codeSample = `import { Appraise } from "@myappraise/sdk";
 
 const appraise = new Appraise({
   apiKey: process.env.APPRAISE_API_KEY

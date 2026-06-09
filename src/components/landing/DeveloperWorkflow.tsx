@@ -8,7 +8,7 @@ const steps = [
     icon: Terminal,
     title: "1. Install SDK",
     description: "Add the Appraise client to any agent, copilot, or backend service.",
-    cmd: "npm install @appraise/sdk\n# or pip install appraise",
+    cmd: "npm i @myappraise/sdk\n# or pip install appraise",
   },
   {
     icon: Settings,

@@ -7,7 +7,7 @@ export default function APIExamples() {
   const [activeTab, setActiveTab] = useState<"ts" | "py">("ts");
   const [copied, setCopied] = useState(false);
 
-  const tsCode = `import { Appraise } from "@appraise/sdk";
+  const tsCode = `import { Appraise } from "@myappraise/sdk";
 
 const appraise = new Appraise({
   apiKey: process.env.APPRAISE_API_KEY

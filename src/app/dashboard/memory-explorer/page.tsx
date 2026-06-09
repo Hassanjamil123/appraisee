@@ -1,13 +1,14 @@
 "use client";
 
 import { FormEvent, useState } from "react";
-import { AlertCircle, Brain, Play, Sparkles, Target, Zap } from "lucide-react";
+import { AlertCircle, Brain, Play, Sparkles, Target, Wand2, Zap } from "lucide-react";
 
 interface Memory { id: string; content: string; type: string; relevanceScore: number; relevanceBreakdown: Record<string, number>; }
 interface ContextResult {
   sessionId: string; urgencySignals: string[]; suggestedActions: string[];
   recentMemories: Memory[]; inferredGoals: string[];
   workflowContext?: { currentStage: string; nextExpectedAction: string; blockers: string[] };
+  retrievalMeta?: { inferredDomain?: string; llmReranked?: boolean; llmSummary?: string };
 }
 
 export default function ContextPlayground() {
@@ -42,12 +43,63 @@ export default function ContextPlayground() {
       {error && <div className="flex items-center gap-3 rounded-xl border border-red-500/20 bg-red-500/5 p-4 text-xs text-red-700"><AlertCircle className="h-4 w-4" />{error}</div>}
       {!result && !error && <div className="rounded-xl border border-dashed border-border-medium bg-surface-1/40 p-14 text-center"><Brain className="mx-auto h-8 w-8 text-accent-blue" /><p className="mt-4 text-sm font-semibold">Run a context request</p><p className="mt-2 text-xs text-text-secondary">Try the seeded Acme candidate to inspect the full flow.</p></div>}
       {result && <div className="grid gap-6 xl:grid-cols-[1fr_340px]">
-        <div className="space-y-3"><h2 className="flex items-center gap-2 text-sm font-bold"><Sparkles className="h-4 w-4 text-accent-purple" />Ranked memories</h2>{result.recentMemories.map((memory) => <div key={memory.id} className="rounded-xl border border-border-subtle bg-surface-1 p-4"><div className="flex items-center justify-between gap-4"><span className="rounded bg-surface-2 px-2 py-1 font-mono text-[10px] text-text-secondary">{memory.type}</span><strong className="text-xs text-emerald-700">{Math.round(memory.relevanceScore * 100)}% relevant</strong></div><p className="mt-3 text-xs leading-relaxed text-text-secondary">{memory.content}</p><div className="mt-3 flex flex-wrap gap-2">{Object.entries(memory.relevanceBreakdown).map(([key, value]) => <span key={key} className="rounded bg-surface-2 px-2 py-1 text-[10px] text-text-tertiary">{key}: {Number(value).toFixed(2)}</span>)}</div></div>)}</div>
-        <aside className="space-y-4"><Panel title="Urgency signals" icon={Zap} items={result.urgencySignals} /><Panel title="Suggested actions" icon={Target} items={result.suggestedActions} /><Panel title="Inferred goals" icon={Brain} items={result.inferredGoals.slice(0, 5)} />{result.workflowContext && <div className="rounded-xl border border-border-subtle bg-surface-1 p-4"><h3 className="text-xs font-bold">Workflow status</h3><p className="mt-3 text-xs text-text-secondary">Stage: <strong className="text-slate-950">{result.workflowContext.currentStage}</strong></p><p className="mt-2 text-xs text-text-secondary">Next: <strong className="text-slate-950">{result.workflowContext.nextExpectedAction}</strong></p></div>}</aside>
+        <div className="space-y-4">
+          <div className="rounded-xl border border-border-subtle bg-surface-1 p-4">
+            <h2 className="flex items-center gap-2 text-sm font-bold"><Wand2 className="h-4 w-4 text-accent-blue" />Retrieval debugger</h2>
+            <p className="mt-2 text-xs leading-6 text-text-secondary">
+              This shows how Appraise framed the request before your model saw it, including inferred domain signals and whether the LLM reranker stepped in.
+            </p>
+            <div className="mt-4 grid gap-3 md:grid-cols-3">
+              <DebuggerStat label="Session" value={result.sessionId} />
+              <DebuggerStat label="Inferred domain" value={result.retrievalMeta?.inferredDomain || "not inferred"} />
+              <DebuggerStat label="LLM rerank" value={result.retrievalMeta?.llmReranked ? "enabled" : "not used"} />
+            </div>
+            {result.retrievalMeta?.llmSummary && (
+              <div className="mt-4 rounded-lg border border-border-subtle bg-surface-2 p-3">
+                <div className="text-[10px] font-bold uppercase tracking-wider text-text-tertiary">LLM summary</div>
+                <p className="mt-2 text-xs leading-6 text-text-secondary">{result.retrievalMeta.llmSummary}</p>
+              </div>
+            )}
+          </div>
+
+          <div className="space-y-3">
+            <h2 className="flex items-center gap-2 text-sm font-bold"><Sparkles className="h-4 w-4 text-accent-purple" />Ranked memories</h2>
+            {result.recentMemories.map((memory) => (
+              <div key={memory.id} className="rounded-xl border border-border-subtle bg-surface-1 p-4">
+                <div className="flex items-center justify-between gap-4">
+                  <span className="rounded bg-surface-2 px-2 py-1 font-mono text-[10px] text-text-secondary">{memory.type}</span>
+                  <strong className="text-xs text-emerald-700">{Math.round(memory.relevanceScore * 100)}% relevant</strong>
+                </div>
+                <p className="mt-3 text-xs leading-relaxed text-text-secondary">{memory.content}</p>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {Object.entries(memory.relevanceBreakdown).map(([key, value]) => (
+                    <span key={key} className="rounded bg-surface-2 px-2 py-1 text-[10px] text-text-tertiary">
+                      {key}: {Number(value).toFixed(2)}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+        <aside className="space-y-4">
+          <Panel title="Urgency signals" icon={Zap} items={result.urgencySignals} />
+          <Panel title="Suggested actions" icon={Target} items={result.suggestedActions} />
+          <Panel title="Inferred goals" icon={Brain} items={result.inferredGoals.slice(0, 5)} />
+          {result.workflowContext && <div className="rounded-xl border border-border-subtle bg-surface-1 p-4"><h3 className="text-xs font-bold">Workflow status</h3><p className="mt-3 text-xs text-text-secondary">Stage: <strong className="text-slate-950">{result.workflowContext.currentStage}</strong></p><p className="mt-2 text-xs text-text-secondary">Next: <strong className="text-slate-950">{result.workflowContext.nextExpectedAction}</strong></p></div>}
+        </aside>
       </div>}
     </div>
   );
 }
 
 function Field({ label, value, onChange }: { label: string; value: string; onChange: (value: string) => void }) { return <label className="space-y-2"><span className="block text-[10px] font-bold uppercase tracking-wider text-text-tertiary">{label}</span><input value={value} onChange={(event) => onChange(event.target.value)} className="w-full rounded-lg border border-border-subtle bg-surface-2 px-3 py-2.5 text-xs outline-none focus:border-accent-blue" /></label>; }
+function DebuggerStat({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-lg border border-border-subtle bg-surface-2 p-3">
+      <div className="text-[10px] font-bold uppercase tracking-wider text-text-tertiary">{label}</div>
+      <div className="mt-2 break-all text-xs font-semibold text-slate-950">{value}</div>
+    </div>
+  );
+}
 function Panel({ title, icon: Icon, items }: { title: string; icon: typeof Brain; items: string[] }) { return <div className="rounded-xl border border-border-subtle bg-surface-1 p-4"><h3 className="flex items-center gap-2 text-xs font-bold"><Icon className="h-3.5 w-3.5 text-accent-blue" />{title}</h3><div className="mt-3 space-y-2">{items.length ? items.map((item) => <div key={item} className="rounded-lg bg-surface-2 px-3 py-2 text-[11px] text-text-secondary">{item.replaceAll("_", " ")}</div>) : <p className="text-[11px] text-text-tertiary">None detected</p>}</div></div>; }

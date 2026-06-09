@@ -9,7 +9,7 @@ export default function SDKSection() {
   const [copiedPy, setCopiedPy] = useState(false);
 
   const copyTs = () => {
-    navigator.clipboard.writeText("npm install @appraise/sdk");
+    navigator.clipboard.writeText("npm i @myappraise/sdk");
     setCopiedTs(true);
     setTimeout(() => setCopiedTs(false), 2500);
   };
@@ -47,7 +47,7 @@ export default function SDKSection() {
             </p>
 
             <div className="flex items-center justify-between p-3.5 rounded-lg bg-surface-2 border border-border-subtle font-mono text-xs text-white mb-6">
-              <span>npm install @appraise/sdk</span>
+              <span>npm i @myappraise/sdk</span>
               <button
                 onClick={copyTs}
                 className="p-1 rounded hover:bg-surface-3 text-text-secondary hover:text-white transition-colors"
