@@ -8,7 +8,14 @@ interface ContextResult {
   sessionId: string; urgencySignals: string[]; suggestedActions: string[];
   recentMemories: Memory[]; inferredGoals: string[];
   workflowContext?: { currentStage: string; nextExpectedAction: string; blockers: string[] };
-  retrievalMeta?: { inferredDomain?: string; llmReranked?: boolean; llmSummary?: string };
+  retrievalMeta?: {
+    inferredDomain?: string;
+    llmReranked?: boolean;
+    llmSummary?: string;
+    sessionStrategy?: string;
+    currentSessionMemories?: number;
+    crossSessionMemories?: number;
+  };
 }
 
 export default function ContextPlayground() {
@@ -53,6 +60,11 @@ export default function ContextPlayground() {
               <DebuggerStat label="Session" value={result.sessionId} />
               <DebuggerStat label="Inferred domain" value={result.retrievalMeta?.inferredDomain || "not inferred"} />
               <DebuggerStat label="LLM rerank" value={result.retrievalMeta?.llmReranked ? "enabled" : "not used"} />
+            </div>
+            <div className="mt-3 grid gap-3 md:grid-cols-3">
+              <DebuggerStat label="Session strategy" value={(result.retrievalMeta?.sessionStrategy || "not reported").replaceAll("_", " ")} />
+              <DebuggerStat label="Current-session memories" value={String(result.retrievalMeta?.currentSessionMemories ?? 0)} />
+              <DebuggerStat label="Cross-session memories" value={String(result.retrievalMeta?.crossSessionMemories ?? 0)} />
             </div>
             {result.retrievalMeta?.llmSummary && (
               <div className="mt-4 rounded-lg border border-border-subtle bg-surface-2 p-3">
