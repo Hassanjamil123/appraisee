@@ -1,6 +1,7 @@
 import Link from "next/link";
 import {
   ArrowRight,
+  BarChart3,
   Bot,
   Brain,
   Building2,
@@ -15,6 +16,7 @@ import {
   Search,
   Shield,
   Sparkles,
+  Bug,
   Workflow,
 } from "lucide-react";
 import { PublicFooter, PublicHeader } from "@/components/public/SiteChrome";
@@ -77,6 +79,9 @@ const platformMap = [
   { href: "/memory", icon: Database, title: "Memory", copy: "Structured memory for facts, entities, decisions, and operational history." },
   { href: "/workflows", icon: Workflow, title: "Workflows", copy: "Stage-aware context for support, sales, recruiting, healthcare, and internal agents." },
   { href: "/retrieval", icon: Search, title: "Retrieval", copy: "Return the smallest useful context window instead of dumping transcripts into prompts." },
+  { href: "/agents", icon: Bot, title: "Agents", copy: "Organize support bots, copilots, and assistants with the right memory boundary." },
+  { href: "/analytics", icon: BarChart3, title: "Analytics", copy: "Measure memory volume, workflow activity, and retrieval performance over time." },
+  { href: "/debugging", icon: Bug, title: "Debugging", copy: "Inspect ranked memories, rerank summaries, and session isolation behavior." },
   { href: "/llms", icon: Sparkles, title: "LLMs", copy: "Use Appraise with OpenAI, Anthropic, OpenRouter, or your own model stack." },
   { href: "/integrations", icon: CloudLightning, title: "Integrations", copy: "Bring Appraise closer to the systems where customer and workflow context already lives." },
 ];

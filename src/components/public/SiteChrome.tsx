@@ -11,6 +11,8 @@ const navGroups = [
       { href: "/memory", label: "Memory", copy: "Structured memory for facts, entities, and decisions." },
       { href: "/workflows", label: "Workflows", copy: "Stage-aware context for agents that do real work." },
       { href: "/retrieval", label: "Retrieval", copy: "Return the smallest useful context window." },
+      { href: "/agents", label: "Agents", copy: "Organize support bots, copilots, and assistants by workflow." },
+      { href: "/analytics", label: "Analytics", copy: "Track memory volume, workflow usage, and retrieval performance." },
       { href: "/integrations", label: "Integrations", copy: "Connect Appraise to the rest of your stack." },
       { href: "/llms", label: "LLMs", copy: "Inject Appraise context before model reasoning." },
     ],
@@ -20,6 +22,7 @@ const navGroups = [
     items: [
       { href: "/docs", label: "Documentation", copy: "Install, authenticate, track events, and retrieve context." },
       { href: "/docs#llm-reasoning", label: "LLM guide", copy: "See how Appraise fits into OpenAI, Anthropic, and OpenRouter flows." },
+      { href: "/debugging", label: "Debugging", copy: "Inspect ranked memories, session isolation, and retrieval logs." },
       { href: "/login?redirectTo=/dashboard/quickstart", label: "Quickstart", copy: "Walk through the first working Appraise integration." },
       { href: "/login?redirectTo=/dashboard/chatbots", label: "Chatbot lab", copy: "Compare stateless bots against Appraise-powered ones." },
     ],
@@ -42,6 +45,8 @@ const footerGroups = [
       { href: "/memory", label: "Memory" },
       { href: "/workflows", label: "Workflows" },
       { href: "/retrieval", label: "Retrieval" },
+      { href: "/agents", label: "Agents" },
+      { href: "/analytics", label: "Analytics" },
       { href: "/llms", label: "LLM integrations" },
       { href: "/integrations", label: "Integrations" },
     ],
@@ -53,6 +58,7 @@ const footerGroups = [
       { href: "/docs#track-api", label: "Track API" },
       { href: "/docs#context-api", label: "Context API" },
       { href: "/docs#llm-reasoning", label: "LLM guide" },
+      { href: "/debugging", label: "Debugging" },
       { href: "/login?redirectTo=/dashboard/quickstart", label: "Quickstart" },
     ],
   },
@@ -189,6 +195,9 @@ export function PublicFooter() {
             </Link>
             <Link href="/llms" className="hover:text-slate-950">
               LLMs
+            </Link>
+            <Link href="/agents" className="hover:text-slate-950">
+              Agents
             </Link>
             <Link href="/integrations" className="hover:text-slate-950">
               Integrations

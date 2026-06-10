@@ -405,6 +405,7 @@ export default function DocsPage() {
                 ["event", "string", "The product event Appraise should remember."],
                 ["content", "string", "Optional human-readable version of the event."],
                 ["metadata", "object", "Structured facts used later during retrieval."],
+                ["memoryPolicy", "string", "Optional. Use auto for assistant replies so Appraise stores only durable assistant turns."],
               ]}
             />
             <CodeBlock
