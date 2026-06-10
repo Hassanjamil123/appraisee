@@ -26,6 +26,7 @@ import {
   ChevronRight,
   Rocket,
   Flag,
+  Shield,
 } from "lucide-react";
 import { signOut } from "@/lib/auth-actions";
 
@@ -60,6 +61,7 @@ interface Props {
   displayName: string;
   initials: string;
   onboardingComplete: boolean;
+  isAdmin: boolean;
 }
 
 interface WorkspaceSummary {
@@ -74,7 +76,7 @@ interface WorkspaceSummary {
   role: string | null;
 }
 
-export default function DashboardShell({ children, userEmail, displayName, initials, onboardingComplete }: Props) {
+export default function DashboardShell({ children, userEmail, displayName, initials, onboardingComplete, isAdmin }: Props) {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
@@ -92,6 +94,7 @@ export default function DashboardShell({ children, userEmail, displayName, initi
   });
   const visiblePlaygroundItems = onboardingComplete ? playgroundItems : [];
   const visibleProductItems = onboardingComplete ? productItems : [];
+  const visibleAdminItems = onboardingComplete && isAdmin ? [{ label: "Admin Panel", href: "/dashboard/admin", icon: Shield }] : [];
   const activeWorkspace = workspaces.find((workspace) => workspace.organization.id === activeWorkspaceId) ?? workspaces[0];
 
   useEffect(() => {
@@ -216,6 +219,15 @@ export default function DashboardShell({ children, userEmail, displayName, initi
                 </div>
               )}
             </div>
+          )}
+
+          {visibleAdminItems.length > 0 && (
+            <NavSection
+              title="Internal"
+              items={visibleAdminItems}
+              pathname={pathname}
+              onboardingComplete={onboardingComplete}
+            />
           )}
         </nav>
 

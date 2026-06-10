@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import DashboardShell from "@/components/dashboard/DashboardShell";
 import { isOnboardingComplete } from "@/lib/onboarding";
+import { isAdminEmail } from "@/lib/admin";
 
 export default async function DashboardLayout({
   children,
@@ -36,6 +37,7 @@ export default async function DashboardLayout({
       displayName={displayName}
       initials={initials}
       onboardingComplete={onboardingComplete}
+      isAdmin={isAdminEmail(user.email)}
     >
       {children}
     </DashboardShell>

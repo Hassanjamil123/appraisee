@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { ArrowUpRight, Brain, ChevronDown } from "lucide-react";
 import { PublicChatWidget } from "@/components/public/PublicChatWidget";
+import { PublicVisitorTracker } from "@/components/public/PublicVisitorTracker";
 
 const navGroups = [
   {
@@ -140,6 +141,7 @@ export function PublicHeader() {
       </nav>
     </header>
       <PublicChatWidget />
+      <PublicVisitorTracker />
     </>
   );
 }
