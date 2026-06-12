@@ -83,7 +83,7 @@ const platformMap = [
   { href: "/analytics", icon: BarChart3, title: "Analytics", copy: "Measure memory volume, workflow activity, and retrieval performance over time." },
   { href: "/debugging", icon: Bug, title: "Debugging", copy: "Inspect ranked memories, rerank summaries, and session isolation behavior." },
   { href: "/llms", icon: Sparkles, title: "LLMs", copy: "Use Appraise with OpenAI, Anthropic, OpenRouter, or your own model stack." },
-  { href: "/integrations", icon: CloudLightning, title: "Integrations", copy: "Bring Appraise closer to the systems where customer and workflow context already lives." },
+  { href: "/integrations", icon: CloudLightning, title: "Integrations", copy: "Custom events are live now, and managed connectors like Slack, Zendesk, HubSpot, Notion, GitHub, Gmail, and Stripe can be requested in the console." },
 ];
 
 const whyRows = [
@@ -189,8 +189,8 @@ const trustItems = [
   },
   {
     icon: FolderKanban,
-    title: "Python SDK soon",
-    copy: "The public docs can already frame the Python path while we finish the client.",
+    title: "Connectors",
+    copy: "Start with custom events today, then activate managed connectors as Appraise moves closer to the rest of your stack.",
   },
   {
     icon: LockKeyhole,

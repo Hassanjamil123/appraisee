@@ -27,6 +27,7 @@ import {
   Rocket,
   Flag,
   Shield,
+  PlugZap,
 } from "lucide-react";
 import { signOut } from "@/lib/auth-actions";
 
@@ -49,6 +50,7 @@ const playgroundItems = [
 
 const productItems = [
   { label: "Workflows", href: "/dashboard/workflows", icon: Workflow },
+  { label: "Connectors", href: "/dashboard/connectors", icon: PlugZap },
   { label: "Users", href: "/dashboard/users", icon: Users },
   { label: "Agents", href: "/dashboard/agents", icon: Workflow },
   { label: "Context Logs", href: "/dashboard/logs", icon: FileCode },
@@ -84,7 +86,7 @@ export default function DashboardShell({ children, userEmail, displayName, initi
   const [activeWorkspaceId, setActiveWorkspaceId] = useState("");
   const [workspaceLoading, setWorkspaceLoading] = useState(false);
   const [playgroundOpen, setPlaygroundOpen] = useState(pathname.startsWith("/dashboard/chatbots") || pathname.startsWith("/dashboard/examples") || pathname.startsWith("/dashboard/support-demo") || pathname.startsWith("/dashboard/memory-explorer"));
-  const [productOpen, setProductOpen] = useState(pathname.startsWith("/dashboard/workflows") || pathname.startsWith("/dashboard/users") || pathname.startsWith("/dashboard/agents") || pathname.startsWith("/dashboard/logs") || pathname.startsWith("/dashboard/analytics"));
+  const [productOpen, setProductOpen] = useState(pathname.startsWith("/dashboard/workflows") || pathname.startsWith("/dashboard/connectors") || pathname.startsWith("/dashboard/users") || pathname.startsWith("/dashboard/agents") || pathname.startsWith("/dashboard/logs") || pathname.startsWith("/dashboard/analytics"));
   const visibleMainItems = mainSidebarItems.filter((item) => {
     if (item.href === "/dashboard/onboarding") {
       return !onboardingComplete;

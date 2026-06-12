@@ -19,43 +19,43 @@ const integrations = [
   {
     icon: LifeBuoy,
     name: "Zendesk",
-    status: "Planned",
+    status: "Request in console",
     copy: "Bring tickets, escalations, CSAT, and prior resolutions into the Appraise memory stream.",
   },
   {
     icon: MessagesSquare,
     name: "Slack",
-    status: "Planned",
+    status: "Request in console",
     copy: "Track internal decisions, escalations, and handoffs that should shape future agent responses.",
   },
   {
     icon: Mail,
     name: "Gmail",
-    status: "Planned",
+    status: "Request in console",
     copy: "Capture customer replies, approvals, and follow-ups as structured memory instead of loose mail threads.",
   },
   {
     icon: Users,
     name: "HubSpot",
-    status: "Planned",
+    status: "Request in console",
     copy: "Keep stakeholder history, objections, buying signals, and stage changes attached to the workflow.",
   },
   {
     icon: Receipt,
     name: "Stripe",
-    status: "Planned",
+    status: "Request in console",
     copy: "Track billing events, retries, upgrades, and high-signal payment issues for support and revenue agents.",
   },
   {
     icon: GitBranch,
     name: "GitHub",
-    status: "Planned",
+    status: "Request in console",
     copy: "Use issues, PRs, and deploy events to give internal copilots richer engineering context.",
   },
   {
     icon: FileText,
     name: "Notion",
-    status: "Planned",
+    status: "Request in console",
     copy: "Pull docs, SOPs, and runbooks into a retrieval layer that also understands workflows and entities.",
   },
   {
@@ -95,8 +95,8 @@ export default function IntegrationsPage() {
                 Start with events
                 <ArrowRight className="h-4 w-4" />
               </Link>
-              <Link href="/login?redirectTo=/dashboard/examples" className="inline-flex items-center gap-2 rounded-full border border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-800">
-                Explore examples
+              <Link href="/login?redirectTo=/dashboard/connectors" className="inline-flex items-center gap-2 rounded-full border border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-800">
+                Open connectors console
               </Link>
             </div>
           </div>
@@ -130,7 +130,7 @@ export default function IntegrationsPage() {
               </div>
               <h2 className="mt-5 text-3xl font-semibold tracking-tight">Start with custom events, then grow into connectors.</h2>
               <p className="mt-4 text-sm leading-7 text-slate-600">
-                Appraise already works through direct event ingestion. That makes the current developer path real today. The next product layer is a clean connector system that turns external tools into first-class memory sources.
+                Appraise already works through direct event ingestion. That makes the current developer path real today. The next product layer is now a real workspace surface: you can register connector intent in the console today, keep custom events live, and roll managed connectors in as they mature.
               </p>
             </div>
             <div className="rounded-[2rem] border border-slate-200 bg-slate-50 p-6">
@@ -152,9 +152,9 @@ export default function IntegrationsPage() {
           <h2 className="text-2xl font-semibold tracking-tight">What developers should expect next</h2>
           <div className="mt-6 grid gap-4 md:grid-cols-3">
             {[
-              "Managed connectors for support, CRM, and docs systems.",
+              "Workspace-level connector records for support, CRM, docs, billing, and engineering tools.",
               "Document and knowledge ingestion for richer retrieval.",
-              "Cleaner workspace-level controls for integrations and syncs.",
+              "Honest rollout states so teams can see which connectors are live versus just requested.",
             ].map((item) => (
               <div key={item} className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm leading-7 text-slate-600">
                 {item}
