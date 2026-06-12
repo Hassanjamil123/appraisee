@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { AlertCircle, ArrowRight, PauseCircle, PlayCircle, PlugZap, RefreshCw, Settings2 } from "lucide-react";
+import { AlertCircle, ArrowRight, CheckCircle2, Copy, PauseCircle, PlayCircle, PlugZap, RefreshCw, Settings2 } from "lucide-react";
 import { timeAgo } from "@/lib/utils";
 
 type ConnectorStatus = "requested" | "configured" | "active" | "paused" | "error";
@@ -28,6 +28,7 @@ type Connector = {
   lastError?: string | null;
   updatedAt?: string | null;
   createdAt?: string | null;
+  config?: Record<string, unknown> | null;
 };
 
 const badgeClassNames = {
@@ -43,10 +44,13 @@ const badgeClassNames = {
 export default function ConnectorsPage() {
   const [catalog, setCatalog] = useState<CatalogItem[]>([]);
   const [connectors, setConnectors] = useState<Connector[]>([]);
+  const [webhookBaseUrl, setWebhookBaseUrl] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [busyProvider, setBusyProvider] = useState("");
   const [updatingId, setUpdatingId] = useState("");
+  const [syncingId, setSyncingId] = useState("");
+  const [copied, setCopied] = useState("");
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -57,6 +61,7 @@ export default function ConnectorsPage() {
       if (!response.ok) throw new Error(body.error?.message || "Unable to load connectors");
       setCatalog(body.catalog || []);
       setConnectors(body.connectors || []);
+      setWebhookBaseUrl(body.webhookBaseUrl || "");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unable to load connectors");
     } finally {
@@ -116,6 +121,33 @@ export default function ConnectorsPage() {
       setError(err instanceof Error ? err.message : "Unable to update connector");
     } finally {
       setUpdatingId("");
+    }
+  }
+
+  async function runSampleSync(connector: Connector) {
+    setSyncingId(connector.id);
+    setError("");
+    try {
+      const response = await fetch(`/api/appraise/v1/connectors/${connector.id}/sample-sync`, {
+        method: "POST",
+      });
+      const body = await response.json();
+      if (!response.ok) throw new Error(body.error?.message || "Unable to sync sample data");
+      await load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Unable to sync sample data");
+    } finally {
+      setSyncingId("");
+    }
+  }
+
+  async function copy(text: string, key: string) {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(key);
+      window.setTimeout(() => setCopied(""), 1600);
+    } catch {
+      setError("Unable to copy to clipboard");
     }
   }
 
@@ -186,10 +218,15 @@ export default function ConnectorsPage() {
                       {busy ? "Saving..." : item.provider === "custom_events" ? "Add connector" : "Request connector"}
                     </button>
                   ) : (
-                    <button onClick={() => void updateStatus(connector, nextStatus(connector.status))} disabled={busy} className="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-900 disabled:opacity-60">
-                      {connector.status === "active" ? <PauseCircle className="h-3.5 w-3.5" /> : <PlayCircle className="h-3.5 w-3.5" />}
-                      {busy ? "Updating..." : actionLabel(connector.status)}
-                    </button>
+                    <>
+                      <button onClick={() => void updateStatus(connector, nextStatus(connector.status))} disabled={busy} className="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-900 disabled:opacity-60">
+                        {connector.status === "active" ? <PauseCircle className="h-3.5 w-3.5" /> : <PlayCircle className="h-3.5 w-3.5" />}
+                        {busy ? "Updating..." : actionLabel(connector.status)}
+                      </button>
+                      <button onClick={() => void runSampleSync(connector)} disabled={syncingId === connector.id} className="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-900 disabled:opacity-60">
+                        {syncingId === connector.id ? "Syncing..." : "Import sample"}
+                      </button>
+                    </>
                   )}
                 </div>
               </article>
@@ -223,6 +260,19 @@ export default function ConnectorsPage() {
                   <Stat label="Last sync" value={connector.lastSyncedAt ? timeAgo(connector.lastSyncedAt) : "not synced yet"} />
                   <Stat label="Updated" value={connector.updatedAt ? timeAgo(connector.updatedAt) : "just now"} />
                 </div>
+                {connector.provider === "github" ? (
+                  <GitHubSetupCard
+                    connector={connector}
+                    webhookBaseUrl={webhookBaseUrl}
+                    copied={copied}
+                    onCopy={copy}
+                  />
+                ) : null}
+                <div className="mt-4 flex items-center gap-2">
+                  <button onClick={() => void runSampleSync(connector)} disabled={syncingId === connector.id} className="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-900 disabled:opacity-60">
+                    {syncingId === connector.id ? "Syncing..." : "Import sample events"}
+                  </button>
+                </div>
                 {connector.lastError ? <p className="mt-4 rounded-lg border border-red-200 bg-red-50 px-3 py-3 text-xs text-red-700">{connector.lastError}</p> : null}
               </div>
             ))}
@@ -253,6 +303,9 @@ function guidanceFor(connector: Connector) {
   if (connector.provider === "custom_events") {
     return "This is the live path today: send product events with the SDK or REST API and use this connector record as the workspace anchor for that integration.";
   }
+  if (connector.provider === "github") {
+    return "GitHub can work for real now through a webhook. Add the webhook URL and token below to a repo, then Appraise will ingest issues, pull requests, and push events.";
+  }
   return "This managed connector is now tracked in the workspace, but native sync is still staged. Keep using direct events or the SDK while Appraise closes the loop on first-party sync.";
 }
 
@@ -266,4 +319,80 @@ function Stat({ label, value, mono = false }: { label: string; value: string; mo
 
 function ErrorState({ message }: { message: string }) {
   return <div className="flex items-center gap-3 rounded-xl border border-red-500/20 bg-red-500/5 p-4 text-xs text-red-700"><AlertCircle className="h-4 w-4" />{message}</div>;
+}
+
+function GitHubSetupCard({
+  connector,
+  webhookBaseUrl,
+  copied,
+  onCopy,
+}: {
+  connector: Connector;
+  webhookBaseUrl: string;
+  copied: string;
+  onCopy: (value: string, key: string) => Promise<void>;
+}) {
+  const token = typeof connector.config?.webhookToken === "string" ? connector.config.webhookToken : "";
+  const webhookUrl = webhookBaseUrl
+    ? `${webhookBaseUrl}/v1/connectors/github/webhook/${connector.id}?token=${token}`
+    : "";
+
+  return (
+    <div className="mt-4 rounded-xl border border-blue-200 bg-blue-50/60 p-4">
+      <div className="flex items-center gap-2 text-xs font-semibold text-blue-800">
+        <CheckCircle2 className="h-4 w-4" />
+        GitHub webhook setup
+      </div>
+      <p className="mt-2 text-xs leading-relaxed text-blue-900/80">
+        In your GitHub repository settings, create a webhook, paste this URL, choose <span className="font-semibold">application/json</span>, and subscribe to <span className="font-semibold">Issues</span>, <span className="font-semibold">Pull requests</span>, and <span className="font-semibold">Pushes</span>.
+      </p>
+      <div className="mt-4 space-y-3">
+        <SetupField
+          label="Webhook URL"
+          value={webhookUrl || "Set APPRAISE_WEBHOOK_BASE_URL or APPRAISE_API_PUBLIC_URL in the backend to show a public webhook URL here."}
+          copyValue={webhookUrl}
+          copied={copied === `webhook-${connector.id}`}
+          onCopy={() => onCopy(webhookUrl, `webhook-${connector.id}`)}
+        />
+        <SetupField
+          label="Webhook token"
+          value={token || "Missing webhook token"}
+          copyValue={token}
+          copied={copied === `token-${connector.id}`}
+          onCopy={() => onCopy(token, `token-${connector.id}`)}
+        />
+      </div>
+    </div>
+  );
+}
+
+function SetupField({
+  label,
+  value,
+  copyValue,
+  copied,
+  onCopy,
+}: {
+  label: string;
+  value: string;
+  copyValue: string;
+  copied: boolean;
+  onCopy: () => void;
+}) {
+  return (
+    <div>
+      <div className="flex items-center justify-between gap-3">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-blue-800/70">{label}</p>
+        {copyValue ? (
+          <button onClick={onCopy} className="inline-flex items-center gap-1 rounded-md border border-blue-200 bg-white px-2 py-1 text-[10px] font-semibold text-blue-700">
+            <Copy className="h-3 w-3" />
+            {copied ? "Copied" : "Copy"}
+          </button>
+        ) : null}
+      </div>
+      <div className="mt-2 rounded-lg border border-blue-200 bg-white px-3 py-3 font-mono text-[11px] text-slate-700 break-all">
+        {value}
+      </div>
+    </div>
+  );
 }
