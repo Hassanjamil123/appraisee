@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { Activity, AlertCircle, ArrowRight, Brain, GitBranch, RefreshCw, Search, Server, Timer } from "lucide-react";
+import { AlertCircle, ArrowRight, Brain, Cable, GitBranch, KeyRound, RefreshCw, Search, Server, Timer } from "lucide-react";
 import { formatLatency, formatNumber, formatStorage } from "@/lib/utils";
 
 interface Stats {
@@ -77,18 +77,23 @@ export default function DashboardOverview() {
     ? [
         { label: "Active memories", value: formatNumber(stats.activeMemories), icon: Brain, hint: `${stats.totalMemories} indexed total` },
         { label: "Context requests today", value: formatNumber(stats.apiCallsToday), icon: Search, hint: "retrieval API calls" },
-        { label: "Active workflows", value: stats.activeWorkflows.toString(), icon: GitBranch, hint: `${stats.totalWorkflows} configured` },
-        { label: "Entities", value: formatNumber(stats.totalEntities), icon: Activity, hint: "people, projects, organizations" },
         { label: "Average latency", value: formatLatency(stats.avgLatencyMs), icon: Timer, hint: "context retrieval" },
       ]
     : [];
+
+  const quickActions = [
+    { href: "/dashboard/quickstart", label: "Start integration", copy: "Get to a first working SDK call.", icon: ArrowRight },
+    { href: "/dashboard/api-keys", label: "Create API key", copy: "Generate credentials for your app.", icon: KeyRound },
+    { href: "/dashboard/connectors", label: "Manage connectors", copy: "Keep custom events and managed connectors organized.", icon: Cable },
+    { href: "/dashboard/memory-explorer", label: "Inspect context", copy: "See exactly what Appraise would retrieve right now.", icon: Search },
+  ];
 
   return (
     <div className="space-y-7 animate-fade-in">
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Developer Console</h1>
-          <p className="mt-1 text-xs text-text-secondary">Monitor what Appraise knows and inspect the context your AI receives.</p>
+          <p className="mt-1 text-sm text-text-secondary">A simpler home for your integration: get set up, inspect context, and keep an eye on memory health.</p>
         </div>
         <div className="flex items-center gap-2">
           <span className="inline-flex items-center gap-2 rounded-lg border border-emerald-500/20 bg-emerald-500/5 px-3 py-2 text-xs font-semibold text-emerald-700">
@@ -107,7 +112,7 @@ export default function DashboardOverview() {
         </div>
       ) : (
         <>
-          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
+          <div className="grid gap-4 md:grid-cols-3">
             {cards.map(({ label, value, icon: Icon, hint }) => (
               <div key={label} className="rounded-xl border border-border-subtle bg-surface-1 p-5">
                 <Icon className="h-4 w-4 text-accent-blue" />
@@ -117,16 +122,36 @@ export default function DashboardOverview() {
               </div>
             ))}
           </div>
+          <section className="rounded-xl border border-border-subtle bg-surface-1 p-5">
+            <div>
+              <h2 className="text-sm font-bold">Start here</h2>
+              <p className="mt-1 text-xs text-text-secondary">The most common tasks developers need in the first few minutes.</p>
+            </div>
+            <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+              {quickActions.map(({ href, label, copy, icon: Icon }) => (
+                <Link key={href} href={href} className="rounded-xl border border-border-subtle bg-surface-2 p-4 transition hover:bg-surface-3">
+                  <Icon className="h-4 w-4 text-accent-blue" />
+                  <p className="mt-4 text-sm font-bold text-slate-950">{label}</p>
+                  <p className="mt-2 text-xs leading-relaxed text-text-secondary">{copy}</p>
+                </Link>
+              ))}
+            </div>
+          </section>
+
           <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
             <section className="rounded-xl border border-border-subtle bg-surface-1 p-5">
               <div className="flex items-center justify-between">
-                <h2 className="text-sm font-bold">Active workflows</h2>
+                <h2 className="text-sm font-bold">Workflows</h2>
                 <Link href="/dashboard/workflows" className="flex items-center gap-1 text-[11px] text-accent-blue">
                   View all <ArrowRight className="h-3 w-3" />
                 </Link>
               </div>
               <div className="mt-4 space-y-3">
-                {workflows.map((workflow) => (
+                {workflows.length === 0 ? (
+                  <div className="rounded-lg border border-dashed border-border-medium bg-surface-2/50 p-5 text-xs text-text-secondary">
+                    No workflows yet. You can still use Appraise with raw workflow labels, then model them more formally when the product flow is clearer.
+                  </div>
+                ) : workflows.map((workflow) => (
                   <div key={workflow.id} className="rounded-lg border border-border-subtle bg-surface-2/50 p-4">
                     <div className="flex items-center justify-between">
                       <div>
@@ -181,20 +206,20 @@ export default function DashboardOverview() {
                 </div>
               </section>
               <section className="rounded-xl border border-border-subtle bg-gradient-to-b from-surface-1 to-blue-500/5 p-5">
-                <h2 className="text-sm font-bold">Integration loop</h2>
+                <h2 className="text-sm font-bold">What Appraise is doing</h2>
                 <p className="mt-2 text-xs leading-relaxed text-text-secondary">
-                  Your app emits operational events. Appraise turns them into ranked context before your copilot responds.
+                  Your app sends events, Appraise shapes them into memory, and your model gets back a smaller context window before it replies.
                 </p>
                 <div className="mt-5 space-y-3 text-[11px]">
-                  <Step number="1" label="Track product events" />
-                  <Step number="2" label="Build session context" />
-                  <Step number="3" label="Inject into your LLM prompt" />
+                  <Step number="1" label="Track events from your product" />
+                  <Step number="2" label="Retrieve only the context that matters" />
+                  <Step number="3" label="Feed that into your model" />
                 </div>
                 <Link
                   href="/dashboard/memory-explorer"
                   className="mt-6 flex items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-accent-blue to-accent-purple px-3 py-2.5 text-xs font-bold text-white"
                 >
-                  Open context playground <ArrowRight className="h-3.5 w-3.5" />
+                  Open context explorer <ArrowRight className="h-3.5 w-3.5" />
                 </Link>
               </section>
             </div>

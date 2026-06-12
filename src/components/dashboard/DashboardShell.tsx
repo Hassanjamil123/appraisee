@@ -19,8 +19,6 @@ import {
   Settings,
   Menu,
   X,
-  Bell,
-  Search,
   LogOut,
   ChevronDown,
   ChevronRight,
@@ -36,25 +34,28 @@ const mainSidebarItems = [
   { label: "Onboarding", href: "/dashboard/onboarding", icon: Flag },
   { label: "Quickstart", href: "/dashboard/quickstart", icon: Rocket },
   { label: "Events", href: "/dashboard/events", icon: Activity },
+  { label: "Connectors", href: "/dashboard/connectors", icon: PlugZap },
   { label: "API Keys", href: "/dashboard/api-keys", icon: Key },
+];
+
+const buildItems = [
+  { label: "Chatbots", href: "/dashboard/chatbots", icon: Bot },
+  { label: "Context Explorer", href: "/dashboard/memory-explorer", icon: Brain },
+  { label: "Workflows", href: "/dashboard/workflows", icon: Workflow },
+];
+
+const manageItems = [
+  { label: "Users", href: "/dashboard/users", icon: Users },
+  { label: "Agents", href: "/dashboard/agents", icon: Bot },
+  { label: "Analytics", href: "/dashboard/analytics", icon: LineChart },
   { label: "Billing", href: "/dashboard/billing", icon: CreditCard },
   { label: "Settings", href: "/dashboard/settings", icon: Settings },
 ];
 
-const playgroundItems = [
-  { label: "Chatbots", href: "/dashboard/chatbots", icon: Bot },
+const secondaryItems = [
+  { label: "Context Logs", href: "/dashboard/logs", icon: FileCode },
   { label: "Examples", href: "/dashboard/examples", icon: BookOpen },
   { label: "Support Demo", href: "/dashboard/support-demo", icon: MessageSquare },
-  { label: "Context Explorer", href: "/dashboard/memory-explorer", icon: Brain },
-];
-
-const productItems = [
-  { label: "Workflows", href: "/dashboard/workflows", icon: Workflow },
-  { label: "Connectors", href: "/dashboard/connectors", icon: PlugZap },
-  { label: "Users", href: "/dashboard/users", icon: Users },
-  { label: "Agents", href: "/dashboard/agents", icon: Workflow },
-  { label: "Context Logs", href: "/dashboard/logs", icon: FileCode },
-  { label: "Analytics", href: "/dashboard/analytics", icon: LineChart },
 ];
 
 interface Props {
@@ -85,8 +86,9 @@ export default function DashboardShell({ children, userEmail, displayName, initi
   const [workspaces, setWorkspaces] = useState<WorkspaceSummary[]>([]);
   const [activeWorkspaceId, setActiveWorkspaceId] = useState("");
   const [workspaceLoading, setWorkspaceLoading] = useState(false);
-  const [playgroundOpen, setPlaygroundOpen] = useState(pathname.startsWith("/dashboard/chatbots") || pathname.startsWith("/dashboard/examples") || pathname.startsWith("/dashboard/support-demo") || pathname.startsWith("/dashboard/memory-explorer"));
-  const [productOpen, setProductOpen] = useState(pathname.startsWith("/dashboard/workflows") || pathname.startsWith("/dashboard/connectors") || pathname.startsWith("/dashboard/users") || pathname.startsWith("/dashboard/agents") || pathname.startsWith("/dashboard/logs") || pathname.startsWith("/dashboard/analytics"));
+  const [buildOpen, setBuildOpen] = useState(pathname.startsWith("/dashboard/chatbots") || pathname.startsWith("/dashboard/memory-explorer") || pathname.startsWith("/dashboard/workflows"));
+  const [manageOpen, setManageOpen] = useState(pathname.startsWith("/dashboard/users") || pathname.startsWith("/dashboard/agents") || pathname.startsWith("/dashboard/analytics") || pathname.startsWith("/dashboard/billing") || pathname.startsWith("/dashboard/settings"));
+  const [secondaryOpen, setSecondaryOpen] = useState(pathname.startsWith("/dashboard/logs") || pathname.startsWith("/dashboard/examples") || pathname.startsWith("/dashboard/support-demo"));
   const visibleMainItems = mainSidebarItems.filter((item) => {
     if (item.href === "/dashboard/onboarding") {
       return !onboardingComplete;
@@ -94,8 +96,9 @@ export default function DashboardShell({ children, userEmail, displayName, initi
 
     return onboardingComplete || item.href === "/dashboard/onboarding";
   });
-  const visiblePlaygroundItems = onboardingComplete ? playgroundItems : [];
-  const visibleProductItems = onboardingComplete ? productItems : [];
+  const visibleBuildItems = onboardingComplete ? buildItems : [];
+  const visibleManageItems = onboardingComplete ? manageItems : [];
+  const visibleSecondaryItems = onboardingComplete ? secondaryItems : [];
   const visibleAdminItems = onboardingComplete && isAdmin ? [{ label: "Admin Panel", href: "/dashboard/admin", icon: Shield }] : [];
   const activeWorkspace = workspaces.find((workspace) => workspace.organization.id === activeWorkspaceId) ?? workspaces[0];
 
@@ -185,18 +188,18 @@ export default function DashboardShell({ children, userEmail, displayName, initi
             onboardingComplete={onboardingComplete}
           />
 
-          {visiblePlaygroundItems.length > 0 && (
+          {visibleBuildItems.length > 0 && (
             <div className="space-y-1">
               <button
-                onClick={() => setPlaygroundOpen((value) => !value)}
+                onClick={() => setBuildOpen((value) => !value)}
                 className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500 hover:bg-slate-100 hover:text-slate-800"
               >
-                {playgroundOpen ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
-                Playground
+                {buildOpen ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
+                Build
               </button>
-              {playgroundOpen && (
+              {buildOpen && (
                 <div className="space-y-0.5">
-                  {visiblePlaygroundItems.map((item) => (
+                  {visibleBuildItems.map((item) => (
                     <NavItem key={item.href} item={item} pathname={pathname} />
                   ))}
                 </div>
@@ -204,18 +207,37 @@ export default function DashboardShell({ children, userEmail, displayName, initi
             </div>
           )}
 
-          {visibleProductItems.length > 0 && (
+          {visibleManageItems.length > 0 && (
             <div className="space-y-1">
               <button
-                onClick={() => setProductOpen((value) => !value)}
+                onClick={() => setManageOpen((value) => !value)}
                 className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500 hover:bg-slate-100 hover:text-slate-800"
               >
-                {productOpen ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
-                Product Data
+                {manageOpen ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
+                Manage
               </button>
-              {productOpen && (
+              {manageOpen && (
                 <div className="space-y-0.5">
-                  {visibleProductItems.map((item) => (
+                  {visibleManageItems.map((item) => (
+                    <NavItem key={item.href} item={item} pathname={pathname} />
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {visibleSecondaryItems.length > 0 && (
+            <div className="space-y-1">
+              <button
+                onClick={() => setSecondaryOpen((value) => !value)}
+                className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500 hover:bg-slate-100 hover:text-slate-800"
+              >
+                {secondaryOpen ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
+                More
+              </button>
+              {secondaryOpen && (
+                <div className="space-y-0.5">
+                  {visibleSecondaryItems.map((item) => (
                     <NavItem key={item.href} item={item} pathname={pathname} />
                   ))}
                 </div>
@@ -296,18 +318,18 @@ export default function DashboardShell({ children, userEmail, displayName, initi
             onNavigate={() => setMobileOpen(false)}
           />
 
-          {visiblePlaygroundItems.length > 0 && (
+          {visibleBuildItems.length > 0 && (
             <div className="space-y-1">
               <button
-                onClick={() => setPlaygroundOpen((value) => !value)}
+                onClick={() => setBuildOpen((value) => !value)}
                 className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500 hover:bg-slate-100 hover:text-slate-800"
               >
-                {playgroundOpen ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
-                Playground
+                {buildOpen ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
+                Build
               </button>
-              {playgroundOpen && (
+              {buildOpen && (
                 <div className="space-y-0.5">
-                  {visiblePlaygroundItems.map((item) => (
+                  {visibleBuildItems.map((item) => (
                     <NavItem key={item.href} item={item} pathname={pathname} onNavigate={() => setMobileOpen(false)} />
                   ))}
                 </div>
@@ -315,18 +337,37 @@ export default function DashboardShell({ children, userEmail, displayName, initi
             </div>
           )}
 
-          {visibleProductItems.length > 0 && (
+          {visibleManageItems.length > 0 && (
             <div className="space-y-1">
               <button
-                onClick={() => setProductOpen((value) => !value)}
+                onClick={() => setManageOpen((value) => !value)}
                 className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500 hover:bg-slate-100 hover:text-slate-800"
               >
-                {productOpen ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
-                Product Data
+                {manageOpen ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
+                Manage
               </button>
-              {productOpen && (
+              {manageOpen && (
                 <div className="space-y-0.5">
-                  {visibleProductItems.map((item) => (
+                  {visibleManageItems.map((item) => (
+                    <NavItem key={item.href} item={item} pathname={pathname} onNavigate={() => setMobileOpen(false)} />
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {visibleSecondaryItems.length > 0 && (
+            <div className="space-y-1">
+              <button
+                onClick={() => setSecondaryOpen((value) => !value)}
+                className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500 hover:bg-slate-100 hover:text-slate-800"
+              >
+                {secondaryOpen ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
+                More
+              </button>
+              {secondaryOpen && (
+                <div className="space-y-0.5">
+                  {visibleSecondaryItems.map((item) => (
                     <NavItem key={item.href} item={item} pathname={pathname} onNavigate={() => setMobileOpen(false)} />
                   ))}
                 </div>
@@ -348,37 +389,28 @@ export default function DashboardShell({ children, userEmail, displayName, initi
       <div className="flex-1 flex flex-col min-w-0">
         {/* Header */}
         <header className="h-14 border-b border-slate-200 bg-white/80 backdrop-blur-md sticky top-0 z-30 px-5 flex items-center justify-between">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 min-w-0">
             <button onClick={() => setMobileOpen(true)} className="lg:hidden p-1.5 rounded-lg text-slate-500 hover:text-slate-950 hover:bg-slate-100 transition-all">
               <Menu className="w-4.5 h-4.5" />
             </button>
-            <div className="relative hidden sm:block">
-              <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-              <input
-                type="text"
-                placeholder="Search console..."
-                className="w-64 pl-8.5 pr-4 py-1.5 rounded-lg text-xs bg-slate-50 border border-slate-200 focus:outline-none focus:border-blue-400 text-slate-900 placeholder:text-slate-400 transition-all"
-              />
+            <div className="min-w-0">
+              <div className="text-sm font-semibold text-slate-950 truncate">{onboardingComplete ? "Developer Console" : "Setup your workspace"}</div>
+              {onboardingComplete && activeWorkspace ? (
+                <div className="text-[11px] text-slate-500 truncate">
+                  {activeWorkspace.organization.name}
+                  {activeWorkspace.project?.name ? ` · ${activeWorkspace.project.name}` : ""}
+                </div>
+              ) : null}
             </div>
-            {onboardingComplete && activeWorkspace ? (
-              <div className="hidden xl:flex items-center rounded-full border border-slate-200 bg-white px-3 py-1.5 text-[11px] text-slate-500">
-                <span className="font-semibold text-slate-800">{activeWorkspace.organization.name}</span>
-                {activeWorkspace.role ? <span className="ml-2 capitalize">{activeWorkspace.role}</span> : null}
-              </div>
-            ) : null}
           </div>
 
-          <div className="flex items-center gap-3">
-            <button className="relative p-1.5 rounded-lg hover:bg-slate-100 text-slate-500 hover:text-slate-950 transition-all">
-              <Bell className="w-4 h-4" />
-              <span className="absolute top-1 right-1 w-1.5 h-1.5 bg-blue-500 rounded-full" />
-            </button>
-            <div className="h-5 w-px bg-slate-200" />
-            <div className="flex items-center gap-2">
-              <div className="w-7 h-7 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-[10px] font-bold text-white">
-                {initials}
-              </div>
-              <span className="text-xs font-semibold text-slate-900 hidden md:inline">{displayName}</span>
+          <div className="flex items-center gap-2">
+            <div className="hidden sm:flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-[11px] text-slate-500">
+              <span className="font-semibold text-slate-800">{displayName}</span>
+              {onboardingComplete && activeWorkspace?.role ? <span className="capitalize">{activeWorkspace.role}</span> : null}
+            </div>
+            <div className="w-7 h-7 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-[10px] font-bold text-white">
+              {initials}
             </div>
           </div>
         </header>
